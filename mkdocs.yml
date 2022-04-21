@@ -1,0 +1,37 @@
+site_name: Mognet
+
+theme:
+  name: material
+
+nav:
+  - Home: index.md
+  - Examples: examples.md
+  - Common Operations: common-operations.md
+  - Advanced:
+    - Dependency Injection: advanced/dependency-injection.md
+    - Middleware: advanced/middleware.md
+    - Stateful Tasks: advanced/stateful-tasks.md
+    - Metadata: advanced/metadata.md
+    - Setting Priorities: advanced/setting-priorities.md
+    - Overriding Queues: advanced/overriding-queues.md
+  - Best Practices: best-practices.md
+  - Comparison to Celery: comparison-to-celery.md
+  - Vendor Specifics: 
+    - RabbitMQ: vendor-specifics/rabbitmq.md
+    - Redis: vendor-specifics/redis.md
+  - API Reference: api-reference.md
+  - CLI Reference: cli-reference.md
+
+plugins:
+  - search
+  - mkdocstrings
+
+markdown_extensions:
+  - mkdocs-typer
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - attr_list
+  - md_in_html

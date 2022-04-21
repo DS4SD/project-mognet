@@ -1,0 +1,56 @@
+version: "2.4"
+
+services:
+  mognet:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+      args:
+        VARIANT: "3.8"
+        INSTALL_NODE: "false"
+
+    mem_limit: 4g
+    cpus: 2
+    working_dir: /workspaces/project-mognet
+    volumes:
+      - ..:/workspaces/project-mognet:cached
+      - vscode_server_data:/home/vscode/.vscode-server
+      - cache:/home/vscode/.cache
+
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        sudo chown -R vscode:vscode /home/vscode/.vscode-server
+        sudo chown -R vscode:vscode /home/vscode/.cache
+        exec sleep infinity
+
+  redis:
+    image: redis
+    mem_limit: 128m
+    mem_reservation: 32m
+    cpus: 0.25
+    volumes:
+      - results_backend_data:/data
+    networks:
+      default:
+        aliases:
+          - cps-results-backend
+
+  rabbitmq:
+    image: rabbitmq:management
+    mem_limit: 512m
+    mem_reservation: 128m
+    cpus: 0.5
+    # Prevent huge memory usage by limiting the number
+    # of file descriptors
+    ulimits:
+      nofile:
+        soft: 8192
+        hard: 8192
+
+volumes:
+  results_backend_data: {}
+  vscode_server_data: {}
+  cache: {}

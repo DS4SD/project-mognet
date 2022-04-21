@@ -1,0 +1,45 @@
+version: "2.4"
+
+services:
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - 5672:5672
+      - 15672:15672
+    # Prevent huge memory usage by limiting the number
+    # of file descriptors
+    ulimits:
+      nofile:
+        soft: 8192
+        hard: 8192
+    mem_limit: 512m
+    mem_reservation: 128m
+    cpus: 0.5
+
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
+    mem_limit: 128m
+    mem_reservation: 32m
+    cpus: 0.25
+
+  minio:
+    image: minio/minio
+    ports:
+      - 9000:9000
+      - 9010:9010
+    mem_limit: 512m
+    mem_reservation: 32m
+    cpus: 0.125
+    command:
+      - minio
+      - server
+      - /data
+      - --address
+      - :9000
+      - --console-address
+      - :9010
+    environment:
+      MINIO_ROOT_USER: ACCESS
+      MINIO_ROOT_PASSWORD: SuperS3cret
