@@ -1,0 +1,22 @@
+name: "Build docs"
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install poetry
+        run: pip install poetry
+      - uses: actions/setup-python@v3
+        with:
+          python-version: 3.x
+          cache: 'poetry'
+      - name: Install dependencies
+        run: poetry install
+      - name: Build and push docs
+        run: mkdocs gh-deploy --force
