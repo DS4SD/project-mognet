@@ -1,8 +1,20 @@
 [tool.poetry]
 name = "mognet"
-version = "1.3.1"
-description = ""
+version = "1.3.2"
+description = "Mognet is a fast, simple framework to build distributed applications using task queues."
 authors = ["André Carvalho <afecarvalho@gmail.com>", "Christoph Auer <cau@zurich.ibm.com>", "Michele Dolfi <dol@zurich.ibm.com>", "Peter Staar <taa@zurich.ibm.com>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://ibm.github.io/project-mognet/"
+repository = "https://github.com/IBM/project-mognet"
+documentation = "https://ibm.github.io/project-mognet/"
+classifiers = [
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Version Control :: Git",
+    "Development Status :: 5 - Production/Stable",
+    "Typing :: Typed"
+]
+include = ["mognet/py.typed"]
 
 [tool.poetry.scripts]
 mognet = "mognet.cli.main:main"
