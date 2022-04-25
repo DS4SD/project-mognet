@@ -8,6 +8,9 @@ on:
       - "**"
       - "!gh-pages"
 
+env:
+  POETRY_VIRTUALENVS_CREATE: false
+
 jobs:
   test-build-docs:
     runs-on: ubuntu-latest

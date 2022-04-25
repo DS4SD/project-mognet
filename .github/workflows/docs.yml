@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+env:
+  POETRY_VIRTUALENVS_CREATE: false
+
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

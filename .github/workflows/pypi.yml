@@ -7,6 +7,9 @@ on:
 permissions:
   contents: read
 
+env:
+  POETRY_VIRTUALENVS_CREATE: false
+
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
