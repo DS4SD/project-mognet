@@ -41,6 +41,7 @@ Jinja2 = "<3.1.0" # See https://github.com/mkdocs/mkdocs/issues/2794
 mkdocs-material = "^8.2.6"
 mkdocstrings = {version = "^0.18.1", extras = ["python-legacy"]}
 mkdocs-typer = "^0.0.2"
+isort = "^5.10.1"
 
 [build-system]
 # Allow the package to be installed with `pip install -e ...`,
@@ -55,3 +56,14 @@ requires = [
     "setuptools"
 ]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ["py38"]
+include = '\.pyi?$'
+
+[tool.isort]
+py_version = 38
+profile = "black"
+src_paths = ["mognet", "test"]
+known_first_party = ["mognet"]
