@@ -1,7 +1,6 @@
 import asyncio
 
 from mognet import Context
-
 from mognet.decorators.task_decorator import task
 
 

@@ -2,11 +2,12 @@ import os
 import socket
 from typing import Any, Dict, List, Optional, Set
 
+from pydantic.fields import Field
+from pydantic.main import BaseModel
+
 from mognet.backend.backend_config import ResultBackendConfig
 from mognet.broker.broker_config import BrokerConfig
 from mognet.state.state_backend_config import StateBackendConfig
-from pydantic.fields import Field
-from pydantic.main import BaseModel
 
 
 def _default_node_id() -> str:

@@ -1,32 +1,24 @@
 import base64
-from mognet.exceptions.result_exceptions import ResultFailed, ResultNotReady, Revoked
-import pickle
 import importlib
-import traceback
 import logging
-from typing import (
-    Any,
-    AsyncGenerator,
-    Dict,
-    Optional,
-    TYPE_CHECKING,
-)
-from .result_state import (
-    ERROR_STATES,
-    READY_STATES,
-    ResultState,
-    SUCCESS_STATES,
-)
-
+import pickle
+import traceback
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, Optional
+from uuid import UUID
+
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
-from mognet.tools.dates import now_utc
 from pydantic.tools import parse_obj_as
-from uuid import UUID
+
+from mognet.exceptions.result_exceptions import ResultFailed, ResultNotReady, Revoked
+from mognet.tools.dates import now_utc
+
+from .result_state import ERROR_STATES, READY_STATES, SUCCESS_STATES, ResultState
 
 if TYPE_CHECKING:
     from mognet.backend.base_result_backend import BaseResultBackend
+
     from .result_tree import ResultTree
 
 _log = logging.getLogger(__name__)

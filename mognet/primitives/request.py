@@ -1,11 +1,10 @@
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
 from uuid import UUID, uuid4
-from pydantic import conint
 
+from pydantic import conint
 from pydantic.fields import Field
 from pydantic.generics import GenericModel
-
 
 TReturn = TypeVar("TReturn")
 

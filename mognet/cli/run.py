@@ -1,9 +1,11 @@
-import aiorun
-from asyncio import AbstractEventLoop
 import asyncio
 import logging
+from asyncio import AbstractEventLoop
 from typing import Optional
+
+import aiorun
 import typer
+
 from mognet.cli.cli_state import state
 from mognet.cli.exceptions import GracefulShutdown
 

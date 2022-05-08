@@ -1,7 +1,7 @@
 import asyncio
+import inspect
 import logging
 from functools import wraps
-import inspect
 from typing import (
     Any,
     Awaitable,
@@ -13,7 +13,6 @@ from typing import (
     Union,
     cast,
 )
-
 
 _T = TypeVar("_T")
 

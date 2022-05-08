@@ -1,16 +1,17 @@
 import asyncio
-import treelib
 import logging
 from typing import Optional
 from uuid import UUID
 
 import tabulate
+import treelib
 import typer
+
+from mognet.cli.cli_state import state
 from mognet.cli.models import OutputFormat
 from mognet.cli.run_in_loop import run_in_loop
 from mognet.exceptions.result_exceptions import ResultValueLost
 from mognet.model.result import _ExceptionInfo
-from mognet.cli.cli_state import state
 from mognet.model.result_tree import ResultTree
 
 _log = logging.getLogger(__name__)

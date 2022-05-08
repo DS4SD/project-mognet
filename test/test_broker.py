@@ -1,8 +1,8 @@
-from mognet.exceptions.broker_exceptions import QueueNotFound
-import pytest
-
 from typing import TYPE_CHECKING
 
+import pytest
+
+from mognet.exceptions.broker_exceptions import QueueNotFound
 
 if TYPE_CHECKING:
     from mognet import App

@@ -1,8 +1,10 @@
-from asyncio import Queue
 import asyncio
+from asyncio import Queue
+from typing import AsyncGenerator, Dict
 from uuid import uuid4
 
 from pydantic.fields import PrivateAttr
+
 from mognet.broker.base_broker import (
     BaseBroker,
     IncomingMessagePayload,
@@ -11,7 +13,6 @@ from mognet.broker.base_broker import (
 )
 from mognet.model.queue_stats import QueueStats
 from mognet.primitives.queries import QueryResponseMessage
-from typing import AsyncGenerator, Dict
 
 
 class _InMemoryIncomingMessagePayload(IncomingMessagePayload):

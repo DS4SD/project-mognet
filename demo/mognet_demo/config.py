@@ -11,10 +11,10 @@ from typing import Optional
 from pydantic import BaseModel, BaseSettings
 
 from mognet import AppConfig
-from mognet.app.app_config import ResultBackendConfig, StateBackendConfig, BrokerConfig
+from mognet.app.app_config import BrokerConfig, ResultBackendConfig, StateBackendConfig
 from mognet.backend.backend_config import RedisResultBackendSettings
-from mognet.state.state_backend_config import RedisStateBackendSettings
 from mognet.broker.broker_config import AmqpBrokerSettings
+from mognet.state.state_backend_config import RedisStateBackendSettings
 
 
 class S3Config(BaseModel):

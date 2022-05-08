@@ -1,9 +1,10 @@
 from abc import ABCMeta, abstractmethod
-from mognet.model.queue_stats import QueueStats
-from mognet.primitives.queries import QueryResponseMessage
 from typing import AsyncGenerator, Awaitable, Callable, List, Optional
 
 from pydantic.main import BaseModel
+
+from mognet.model.queue_stats import QueueStats
+from mognet.primitives.queries import QueryResponseMessage
 
 
 class MessagePayload(BaseModel):

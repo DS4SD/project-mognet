@@ -1,7 +1,7 @@
-from mognet.exceptions.base_exceptions import MognetError
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from mognet.exceptions.base_exceptions import MognetError
 
 if TYPE_CHECKING:
     from mognet.model.result import Result

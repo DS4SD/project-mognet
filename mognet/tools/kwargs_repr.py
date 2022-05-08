@@ -1,4 +1,4 @@
-from typing import Optional, Any
+from typing import Any, Optional
 
 
 def _format_value(value: Any, *, max_length: Optional[int]) -> str:

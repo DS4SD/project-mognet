@@ -1,15 +1,7 @@
 import asyncio
 from abc import ABCMeta, abstractmethod
 from datetime import timedelta
-from typing import (
-    Any,
-    AsyncGenerator,
-    Dict,
-    List,
-    Optional,
-    Protocol,
-    Union,
-)
+from typing import Any, AsyncGenerator, Dict, List, Optional, Protocol, Union
 from uuid import UUID
 
 from mognet.backend.backend_config import ResultBackendConfig

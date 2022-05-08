@@ -1,29 +1,36 @@
-from mognet.state.state_backend_config import (
-    RedisStateBackendSettings,
-    StateBackendConfig,
-)
-from mognet.broker.broker_config import AmqpBrokerSettings, BrokerConfig
+import os
+from pathlib import Path
+
+from mognet.app.app import App
+from mognet.app.app_config import AppConfig
 from mognet.backend.backend_config import (
     RedisResultBackendSettings,
     ResultBackendConfig,
 )
-from mognet.app.app import App
-from mognet.app.app_config import AppConfig
-
-
-config = AppConfig(
-    result_backend=ResultBackendConfig(
-        redis=RedisResultBackendSettings(url="redis://redis")
-    ),
-    broker=BrokerConfig(amqp=AmqpBrokerSettings(url="amqp://rabbitmq")),
-    state_backend=StateBackendConfig(
-        redis=RedisStateBackendSettings(url="redis://redis")
-    ),
-    task_routes={},
-    minimum_concurrency=1,
+from mognet.broker.broker_config import AmqpBrokerSettings, BrokerConfig
+from mognet.state.state_backend_config import (
+    RedisStateBackendSettings,
+    StateBackendConfig,
 )
 
-config.imports = ["test.test_tasks"]
+
+def get_config():
+    config_file_path = Path(os.getenv("MOGNET_TEST_CONFIG_FILE", "config.json"))
+
+    if config_file_path.is_file():
+        return AppConfig.parse_file(config_file_path)
+
+    return AppConfig(
+        result_backend=ResultBackendConfig(
+            redis=RedisResultBackendSettings(url="redis://redis")
+        ),
+        broker=BrokerConfig(amqp=AmqpBrokerSettings(url="amqp://rabbitmq")),
+        state_backend=StateBackendConfig(
+            redis=RedisStateBackendSettings(url="redis://redis")
+        ),
+        task_routes={},
+        minimum_concurrency=1,
+    )
 
 
-app = App(name="test", config=config)
+app = App(name="test", config=get_config())

@@ -1,6 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import TYPE_CHECKING, TypeVar, Generic
-
+from typing import TYPE_CHECKING, Generic, TypeVar
 
 if TYPE_CHECKING:
     from mognet.app.app_config import AppConfig

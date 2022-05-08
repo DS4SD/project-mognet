@@ -1,6 +1,7 @@
+from typing import Any, Dict, List, Tuple, Union
+
 from pydantic import BaseModel
 from pydantic.error_wrappers import ValidationError
-from typing import Any, Dict, List, Tuple, Union
 
 # Taken from pydantic.error_wrappers
 Loc = Tuple[Union[int, str], ...]

@@ -6,7 +6,7 @@ Should be upstreamed here: https://github.com/omnilib/aioitertools/pull/103
 
 import asyncio
 from contextlib import suppress
-from typing import AsyncIterable, Iterable, TypeVar, AsyncGenerator
+from typing import AsyncGenerator, AsyncIterable, Iterable, TypeVar
 
 T = TypeVar("T")
 

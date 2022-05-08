@@ -23,6 +23,8 @@ from aio_pika.exchange import Exchange, ExchangeType
 from aio_pika.message import IncomingMessage, Message
 from aio_pika.queue import Queue
 from aiormq.exceptions import AMQPChannelError, ChannelInvalidStateError
+from pydantic.fields import PrivateAttr
+
 from mognet.broker.base_broker import (
     BaseBroker,
     IncomingMessagePayload,
@@ -36,7 +38,6 @@ from mognet.model.queue_stats import QueueStats
 from mognet.primitives.queries import QueryResponseMessage
 from mognet.tools.retries import retryableasyncmethod
 from mognet.tools.urls import censor_credentials
-from pydantic.fields import PrivateAttr
 
 _log = logging.getLogger(__name__)
 

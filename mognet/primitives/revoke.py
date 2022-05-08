@@ -1,5 +1,6 @@
 from typing import ClassVar
 from uuid import UUID
+
 from pydantic.main import BaseModel
 
 

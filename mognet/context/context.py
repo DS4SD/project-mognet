@@ -19,7 +19,7 @@ from typing import (
 )
 
 if sys.version_info >= (3, 10):
-    from typing import ParamSpec, Concatenate
+    from typing import Concatenate, ParamSpec
 else:
     from typing_extensions import ParamSpec, Concatenate
 
@@ -98,7 +98,7 @@ class Context:
         self,
         request: Callable[Concatenate["Context", _P], _Return],
         *args: _P.args,
-        **kwargs: _P.kwargs
+        **kwargs: _P.kwargs,
     ) -> _Return:
         """
         Short-hand method for creating a Request from a function decorated with `@task`,
@@ -114,7 +114,7 @@ class Context:
         self,
         request: Callable[Concatenate["Context", _P], Awaitable[_Return]],
         *args: _P.args,
-        **kwargs: _P.kwargs
+        **kwargs: _P.kwargs,
     ) -> _Return:
         """
         Short-hand method for creating a Request from a function decorated with `@task`,
@@ -211,7 +211,7 @@ class Context:
         self,
         func: Callable[Concatenate["Context", _P], _Return],
         *args: _P.args,
-        **kwargs: _P.kwargs
+        **kwargs: _P.kwargs,
     ) -> _Return:
         ...
 

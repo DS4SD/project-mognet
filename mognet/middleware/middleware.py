@@ -8,10 +8,10 @@ else:
 
 
 if TYPE_CHECKING:
+    from mognet.app.app import App
     from mognet.context.context import Context
     from mognet.model.result import Result
     from mognet.primitives.request import Request
-    from mognet.app.app import App
 
 
 class Middleware(Protocol):

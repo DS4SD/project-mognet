@@ -1,6 +1,5 @@
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
-
 
 if TYPE_CHECKING:
     from mognet import App

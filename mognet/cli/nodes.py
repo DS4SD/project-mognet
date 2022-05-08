@@ -4,13 +4,14 @@ from typing import List, Optional
 
 import tabulate
 import typer
+from pydantic import BaseModel, Field
+
 from mognet.cli.cli_state import state
 from mognet.cli.models import OutputFormat
 from mognet.cli.run_in_loop import run_in_loop
 from mognet.model.result import Result
 from mognet.primitives.queries import StatusResponseMessage
 from mognet.tools.dates import now_utc
-from pydantic import BaseModel, Field
 
 group = typer.Typer()
 

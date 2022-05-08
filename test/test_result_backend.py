@@ -1,6 +1,7 @@
+from dataclasses import dataclass
 from typing import Type
 from uuid import uuid4
-from dataclasses import dataclass
+
 import pytest
 import pytest_asyncio
 

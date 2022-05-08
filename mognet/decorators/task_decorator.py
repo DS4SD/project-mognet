@@ -1,5 +1,6 @@
 import logging
 from typing import Any, Callable, Optional, TypeVar, cast
+
 from mognet.tasks.task_registry import TaskRegistry, task_registry
 
 _log = logging.getLogger(__name__)

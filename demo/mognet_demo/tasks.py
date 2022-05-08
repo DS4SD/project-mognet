@@ -7,14 +7,14 @@ import logging
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Set, List
+from typing import List, Set
 from uuid import uuid4
-
-from mognet import Context, Request, task
 
 from mognet_demo.config import DemoConfig
 from mognet_demo.models import Document, Upload, UploadResult
 from mognet_demo.s3 import get_s3_client
+
+from mognet import Context, Request, task
 
 _log = logging.getLogger(__name__)
 

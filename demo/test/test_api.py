@@ -1,9 +1,10 @@
 import time
-import requests
 from pathlib import Path
-from mognet_demo.models import Job, UploadJobResult
-from mognet.model.result_state import READY_STATES, SUCCESS_STATES
 
+import requests
+from mognet_demo.models import Job, UploadJobResult
+
+from mognet.model.result_state import READY_STATES, SUCCESS_STATES
 
 _cwd = Path(__file__).parent
 

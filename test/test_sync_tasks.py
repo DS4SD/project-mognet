@@ -1,9 +1,11 @@
 import asyncio
-import pytest
 import time
-from mognet import task, Context, App, Request
-from mognet.model.result_state import ResultState
 from test.test_tasks import add
+
+import pytest
+
+from mognet import App, Context, Request, task
+from mognet.model.result_state import ResultState
 
 
 @task(name="test.sync_slow_add")

@@ -1,6 +1,8 @@
 import asyncio
+
 import pytest
 import pytest_asyncio
+
 from mognet import App
 
 

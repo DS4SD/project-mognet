@@ -22,6 +22,7 @@ from typing import (
 )
 
 from aio_pika.tools import shield
+
 from mognet.backend.base_result_backend import BaseResultBackend
 from mognet.backend.redis_result_backend import RedisResultBackend
 from mognet.broker.amqp_broker import AmqpBroker
@@ -46,9 +47,9 @@ from mognet.tools.kwargs_repr import format_kwargs_repr
 from mognet.worker.worker import MessageCancellationAction, Worker
 
 if sys.version_info >= (3, 10):
-    from typing import ParamSpec, Concatenate
+    from typing import Concatenate, ParamSpec
 else:
-    from typing_extensions import ParamSpec, Concatenate
+    from typing_extensions import Concatenate, ParamSpec
 
 
 if TYPE_CHECKING:

@@ -1,10 +1,8 @@
 import pytest
-
+from mognet_demo.config import DemoConfig
+from mognet_demo.mognet_app import app
 
 from mognet.testing.pytest_integration import create_app_fixture
-from mognet_demo.config import DemoConfig
-
-from mognet_demo.mognet_app import app
 
 
 @pytest.fixture
