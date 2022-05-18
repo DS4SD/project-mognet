@@ -39,4 +39,4 @@ app.add_middleware(MyMiddleware())
 
 ## A more concrete example
 
-See [`AutoShutdownMiddleware`](https://github.ibm.com/CognitiveCore-Utilities/mognet-demo/blob/457dd98ebb284ae1e96bc30190c718b18ed5050d/mognet_demo/middleware/auto_shutdown.py#L28). This class implements a common pattern for long running applications: periodic restarts to release memory, due to Python's memory model.
+See [`AutoShutdownMiddleware`](https://github.com/DS4SD/project-mognet/blob/main/demo/mognet_demo/middleware/auto_shutdown.py#L28). This class implements a common pattern for long running applications: periodic restarts to release memory, due to Python's memory model.
