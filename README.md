@@ -12,7 +12,7 @@ pip install mognet
 
 ## Getting Started and Documentation
 
-We recommend having a look at the [Documentation](https://ibm.github.io/project-mognet/).
+We recommend having a look at the [Documentation](https://ds4sd.github.io/project-mognet/).
 
 ## Contributing
 
@@ -28,7 +28,7 @@ If you use `Mognet` in your projects, please consider citing the following:
 author = {DeepSearch Team},
 month = {4},
 title = {{Project Mognet}},
-url = {https://github.com/IBM/project-mognet},
+url = {https://github.com/DS4SD/project-mognet},
 version = {main},
 year = {2022}
 }

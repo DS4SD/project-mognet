@@ -5,9 +5,9 @@ description = "Mognet is a fast, simple framework to build distributed applicati
 authors = ["André Carvalho <afecarvalho@gmail.com>", "Christoph Auer <cau@zurich.ibm.com>", "Michele Dolfi <dol@zurich.ibm.com>", "Peter Staar <taa@zurich.ibm.com>"]
 license = "MIT"
 readme = "README.md"
-homepage = "https://ibm.github.io/project-mognet/"
-repository = "https://github.com/IBM/project-mognet"
-documentation = "https://ibm.github.io/project-mognet/"
+homepage = "https://ds4sd.github.io/project-mognet/"
+repository = "https://github.com/DS4SD/project-mognet"
+documentation = "https://ds4sd.github.io/project-mognet/"
 classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Software Development :: Version Control :: Git",

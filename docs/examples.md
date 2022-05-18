@@ -4,4 +4,4 @@
 
 This example defines a FastAPI server for a REST API that processes files, in the background, using Mognet.
 
-It is available here: [https://github.com/IBM/project-mognet/tree/main/demo/](https://github.com/IBM/project-mognet/tree/main/demo/)
+It is available here: [https://github.com/DS4SD/project-mognet/tree/main/demo/](https://github.com/DS4SD/project-mognet/tree/main/demo/)

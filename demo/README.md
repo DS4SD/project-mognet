@@ -1,6 +1,6 @@
 # Mognet Demo
 
-This is a demo application for [Mognet](https://github.ibm.com/CognitiveCore-Utilities/project-mognet). It consists of a REST API, implemented with [FastAPI](https://fastapi.tiangolo.com/), that receives files to process, and a Mognet backend, that will process the files.
+This is a demo application for [Mognet](https://github.com/DS4SD/project-mognet). It consists of a REST API, implemented with [FastAPI](https://fastapi.tiangolo.com/), that receives files to process, and a Mognet backend, that will process the files.
 
 ## Installing
 
