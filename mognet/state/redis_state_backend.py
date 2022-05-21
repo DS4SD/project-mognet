@@ -1,10 +1,12 @@
-import logging
 import json
-from typing import Any, Optional, TYPE_CHECKING, TypeVar
-import aioredis
+import logging
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
+
+from redis.asyncio import Redis, from_url
+
 from mognet.exceptions.base_exceptions import NotConnected
-from mognet.state.state_backend_config import StateBackendConfig
 from mognet.state.base_state_backend import BaseStateBackend
+from mognet.state.state_backend_config import StateBackendConfig
 from mognet.tools.urls import censor_credentials
 
 if TYPE_CHECKING:
@@ -25,7 +27,7 @@ class RedisStateBackend(BaseStateBackend):
         self.app = app
 
     @property
-    def _redis(self) -> aioredis.Redis:
+    def _redis(self) -> Redis:
         if self.__redis is None:
             raise NotConnected
 
@@ -110,7 +112,7 @@ class RedisStateBackend(BaseStateBackend):
         await self.close()
 
     async def connect(self):
-        redis: aioredis.Redis = aioredis.from_url(
+        redis: Redis = from_url(
             self.config.redis.url,
             max_connections=self.config.redis.max_connections,
         )
