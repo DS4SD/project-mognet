@@ -10,8 +10,10 @@ from datetime import timedelta
 from typing import Any, AnyStr, Dict, Iterable, List, Optional, Set
 from uuid import UUID
 
-import aioredis
-from aioredis.exceptions import TimeoutError, ConnectionError
+from pydantic.tools import parse_raw_as
+from redis.asyncio import Redis, from_url
+from redis.exceptions import ConnectionError, TimeoutError
+
 from mognet.backend.backend_config import Encoding, ResultBackendConfig
 from mognet.backend.base_result_backend import AppParameters, BaseResultBackend
 from mognet.exceptions.base_exceptions import NotConnected
@@ -19,7 +21,6 @@ from mognet.exceptions.result_exceptions import ResultValueLost
 from mognet.model.result import Result, ResultValueHolder
 from mognet.model.result_state import READY_STATES, ResultState
 from mognet.tools.urls import censor_credentials
-from pydantic.tools import parse_raw_as
 
 _log = logging.getLogger(__name__)
 
@@ -83,7 +84,7 @@ class RedisResultBackend(BaseResultBackend):
         self._retry_lock = asyncio.Lock()
 
     @property
-    def _redis(self) -> aioredis.Redis:
+    def _redis(self) -> Redis:
         if self.__redis is None:
             raise NotConnected
 
@@ -402,7 +403,7 @@ class RedisResultBackend(BaseResultBackend):
 
     async def _create_redis(self):
         _log.debug("Creating Redis connection")
-        redis: aioredis.Redis = await aioredis.from_url(
+        redis: Redis = await from_url(
             self._url,
             max_connections=self.config.redis.max_connections,
         )
