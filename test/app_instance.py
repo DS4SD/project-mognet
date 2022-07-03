@@ -15,18 +15,18 @@ from mognet.state.state_backend_config import (
 
 
 def get_config():
-    config_file_path = Path(os.getenv("MOGNET_TEST_CONFIG_FILE", "config.json"))
+    config_file_path = Path(os.getenv("MOGNET_CONFIG_FILE", "config.json"))
 
     if config_file_path.is_file():
         return AppConfig.parse_file(config_file_path)
 
     return AppConfig(
         result_backend=ResultBackendConfig(
-            redis=RedisResultBackendSettings(url="redis://redis")
+            redis=RedisResultBackendSettings(url="redis://localhost:6379/0")
         ),
-        broker=BrokerConfig(amqp=AmqpBrokerSettings(url="amqp://rabbitmq")),
+        broker=BrokerConfig(amqp=AmqpBrokerSettings(url="amqp://localhost:5672")),
         state_backend=StateBackendConfig(
-            redis=RedisStateBackendSettings(url="redis://redis")
+            redis=RedisStateBackendSettings(url="redis://localhost:6379/0")
         ),
         task_routes={},
         minimum_concurrency=1,

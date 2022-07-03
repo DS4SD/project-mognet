@@ -17,6 +17,9 @@ services:
       - vscode_server_data:/home/vscode/.vscode-server
       - cache:/home/vscode/.cache
 
+    environment:
+      - MOGNET_CONFIG_FILE=/workspaces/project-mognet/.devcontainer/config.json
+
     command:
       - bash
       - -c

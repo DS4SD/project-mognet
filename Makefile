@@ -30,8 +30,13 @@ lint: lint-isort lint-black lint-pylint
 docker-up:
 	@docker-compose \
 		-f $(DOCKER_COMPOSE_FILE) \
-		up -d \
-		--remove-orphans
+		up -d
+
+.PHONY: docker-down
+docker-down:
+	@docker-compose \
+		-f $(DOCKER_COMPOSE_FILE) \
+		down
 
 .PHONY: test
 test:
