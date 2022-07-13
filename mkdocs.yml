@@ -35,3 +35,8 @@ markdown_extensions:
   - pymdownx.superfences
   - attr_list
   - md_in_html
+
+extra:
+  analytics:
+    provider: google
+    property: G-8WR82RYJQL
