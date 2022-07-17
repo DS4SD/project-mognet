@@ -13,9 +13,9 @@ services:
 
   rabbitmq:
     image: rabbitmq:management
-    mem_limit: 512m
+    mem_limit: 1024m
     mem_reservation: 128m
-    cpus: 0.5
+    cpus: 1
     # Prevent huge memory usage by limiting the number
     # of file descriptors
     ulimits:

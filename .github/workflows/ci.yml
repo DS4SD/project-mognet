@@ -12,6 +12,35 @@ env:
   POETRY_VIRTUALENVS_CREATE: false
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install poetry
+        run: pip install poetry
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+          cache-dependency-path: "poetry.lock"
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Lint
+        run: make lint
+
+      - name: Run docker-compose stack for testing
+        run: make docker-up
+
+      - name: Test
+        run: make test
+
   test-build-docs:
     runs-on: ubuntu-latest
     steps:
@@ -21,8 +50,8 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: 3.x
-          cache: 'pip'
-          cache-dependency-path: 'poetry.lock'
+          cache: "pip"
+          cache-dependency-path: "poetry.lock"
       - name: Install dependencies
         run: poetry install
       - run: mkdocs build --verbose --clean --strict
