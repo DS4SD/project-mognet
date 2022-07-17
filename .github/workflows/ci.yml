@@ -19,15 +19,14 @@ jobs:
         python-version: ["3.8", "3.9", "3.10"]
     steps:
       - uses: actions/checkout@v3
-
-      - name: Install poetry
-        run: pip install poetry
-
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
           cache-dependency-path: "poetry.lock"
+
+      - name: Install poetry
+        run: pip install poetry
 
       - name: Install dependencies
         run: poetry install
@@ -39,19 +38,23 @@ jobs:
         run: make docker-up
 
       - name: Test
-        run: make test
+        # Wait for RabbitMQ to start.
+        run: sleep 10 && make test
 
   test-build-docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Install poetry
-        run: pip install poetry
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v4
         with:
-          python-version: 3.x
+          python-version: "3.10"
           cache: "pip"
           cache-dependency-path: "poetry.lock"
+
+      - name: Install poetry
+        run: pip install poetry
+
       - name: Install dependencies
         run: poetry install
-      - run: mkdocs build --verbose --clean --strict
+
+      - run: poetry run mkdocs build --verbose --clean --strict

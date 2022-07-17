@@ -1,14 +1,26 @@
 from datetime import datetime, timedelta
-from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+)
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, conint
 from pydantic.fields import Field
-from typing_extensions import TypeAlias
 
 TReturn = TypeVar("TReturn")
 
-Priority: TypeAlias = conint(ge=0, le=10)  # type: ignore
+if TYPE_CHECKING:
+    Priority = int
+else:
+    Priority = conint(ge=0, le=10)
 
 
 class Request(BaseModel, Generic[TReturn]):

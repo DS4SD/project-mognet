@@ -2,16 +2,22 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 from uuid import UUID
 
 from redis.asyncio import from_url
-from typing_extensions import TypeAlias
 
 from mognet.exceptions.base_exceptions import NotConnected
 from mognet.state.base_state_backend import BaseStateBackend
 from mognet.state.state_backend_config import StateBackendConfig
 from mognet.tools.urls import censor_credentials
+
+if sys.version_info < (3, 10):
+    from typing_extensions import TypeAlias
+else:
+    from typing import TypeAlias
+
 
 if TYPE_CHECKING:
     from redis.asyncio import Redis  # noqa: F401

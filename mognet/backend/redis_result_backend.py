@@ -5,6 +5,7 @@ import functools
 import gzip
 import json
 import logging
+import sys
 from asyncio import shield
 from datetime import timedelta
 from typing import (
@@ -30,7 +31,6 @@ from uuid import UUID
 from pydantic.tools import parse_raw_as
 from redis.asyncio import from_url
 from redis.exceptions import ConnectionError, TimeoutError
-from typing_extensions import TypeAlias
 
 from mognet.backend.backend_config import Encoding, ResultBackendConfig
 from mognet.backend.base_result_backend import AppParameters, BaseResultBackend
@@ -40,15 +40,18 @@ from mognet.model.result import Result, ResultValueHolder
 from mognet.model.result_state import READY_STATES, ResultState
 from mognet.tools.urls import censor_credentials
 
+if sys.version_info < (3, 10):
+    from typing_extensions import TypeAlias
+else:
+    from typing import TypeAlias
+
 if TYPE_CHECKING:
     from redis.asyncio import Redis  # noqa: F401
 
 _log = logging.getLogger(__name__)
 
 
-_EncodedHSetPayload: TypeAlias = Mapping[
-    Union[str, bytes], Union[bytes, float, int, str]
-]
+_EncodedHSetPayload = Mapping[Union[str, bytes], Union[bytes, float, int, str]]
 
 _F = TypeVar("_F", bound=Callable[..., Awaitable[Any]])
 _Redis: TypeAlias = "Redis[Any]"
