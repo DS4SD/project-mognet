@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import tabulate
 import typer
@@ -35,14 +35,14 @@ async def status(
         30,
         help="Timeout for querying nodes",
     ),
-):
+) -> None:
     """Query each node for their status"""
 
     async with state["app_instance"] as app:
         while True:
             each_node_status: List[StatusResponseMessage] = []
 
-            async def read_status():
+            async def read_status() -> None:
                 async for node_status in app.get_current_status_of_nodes():
                     each_node_status.append(node_status)
 
@@ -116,6 +116,6 @@ async def status(
 class _CliStatusReport(BaseModel):
     class NodeStatus(BaseModel):
         node_id: str
-        running_requests: List[Result]
+        running_requests: List[Result[Any]]
 
     node_status: List[NodeStatus] = Field(default_factory=list)

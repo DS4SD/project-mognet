@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import Any, Dict, List, Literal
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -14,7 +14,7 @@ class QueryResponseMessage(BaseModel):
 
     kind: str
     node_id: str
-    payload: BaseModel
+    payload: Any
 
 
 class StatusResponseMessage(QueryResponseMessage):

@@ -6,13 +6,10 @@ from typing import TYPE_CHECKING
 
 import typer
 
+from mognet import App
 from mognet.cli import nodes, queues, run, tasks
 from mognet.cli.cli_state import state
 from mognet.cli.models import LogLevel
-
-if TYPE_CHECKING:
-    from mognet import App
-
 
 main = typer.Typer(name="mognet")
 
@@ -34,7 +31,7 @@ def _get_app(app_pointer: str) -> "App":
 
     app = getattr(app_module, app_var_name or "app", None)
 
-    if app is None:
+    if not isinstance(app, App):
         raise _AppNotFound(
             f"Could not find an app on {app_module_name!r}. Expected to find an attribute named {app_var_name!r}\n"
             f"You can specify a different attribute after a ':'.\n"
@@ -51,7 +48,7 @@ def callback(
     log_format: str = typer.Option(
         "%(asctime)s:%(name)s:%(levelname)s:%(message)s", metavar="log-format"
     ),
-):
+) -> None:
     """Mognet CLI"""
 
     logging.basicConfig(

@@ -10,7 +10,7 @@ group = typer.Typer()
 
 @group.command("purge")
 @run_in_loop
-async def purge(force: bool = typer.Option(False)):
+async def purge(force: bool = typer.Option(False)) -> None:
     """Purge task and control queues"""
 
     if not force:

@@ -73,7 +73,7 @@ known_first_party = ["mognet"]
 
 [tool.mypy]
 python_version = 3.8
-pretty = true
+strict = true
 
 # Silence errors for third-party packages that don't have
 # typings available.

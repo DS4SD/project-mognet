@@ -1,5 +1,7 @@
 import sys
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+from mognet.model.result import Result
 
 if sys.version_info >= (3, 10):
     from typing import Protocol
@@ -14,7 +16,7 @@ if TYPE_CHECKING:
     from mognet.primitives.request import Request
 
 
-class Middleware(Protocol):
+class Middleware:
     """
     Defines middleware that can hook into different parts of a Mognet App's lifecycle.
     """
@@ -47,7 +49,7 @@ class Middleware(Protocol):
         For example, you can use this for cleaning up objects that were previously set up.
         """
 
-    async def on_task_starting(self, context: "Context"):
+    async def on_task_starting(self, context: "Context") -> None:
         """
         Called when a task is starting.
 
@@ -55,8 +57,8 @@ class Middleware(Protocol):
         """
 
     async def on_task_completed(
-        self, result: "Result", context: Optional["Context"] = None
-    ):
+        self, result: "Result[Any]", context: Optional["Context"] = None
+    ) -> None:
         """
         Called when a task has completed it's execution.
 
@@ -64,8 +66,8 @@ class Middleware(Protocol):
         """
 
     async def on_request_submitting(
-        self, request: "Request", context: Optional["Context"] = None
-    ):
+        self, request: "Request[Any]", context: Optional["Context"] = None
+    ) -> None:
         """
         Called when a Request object is going to be submitted to the Broker.
 
@@ -73,7 +75,7 @@ class Middleware(Protocol):
         the Request object (e.g., to modify arguments, or set metadata).
         """
 
-    async def on_running_task_count_changed(self, running_task_count: int):
+    async def on_running_task_count_changed(self, running_task_count: int) -> None:
         """
         Called when the Worker's task count changes.
 

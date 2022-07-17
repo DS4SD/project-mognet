@@ -1,15 +1,32 @@
+from __future__ import annotations
+
 import base64
 import importlib
 import logging
 import pickle
 import traceback
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    AsyncGenerator,
+    AsyncIterable,
+    Awaitable,
+    Dict,
+    Generator,
+    Generic,
+    Iterable,
+    Optional,
+    Type,
+    TypeVar,
+    cast,
+)
 from uuid import UUID
 
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 from pydantic.tools import parse_obj_as
+from typing_extensions import TypeAlias
 
 from mognet.exceptions.result_exceptions import ResultFailed, ResultNotReady, Revoked
 from mognet.tools.dates import now_utc
@@ -23,11 +40,14 @@ if TYPE_CHECKING:
 
 _log = logging.getLogger(__name__)
 
+_TSelf = TypeVar("_TSelf")
+_Return = TypeVar("_Return")
+
 
 class ResultChildren:
     """The children of a Result."""
 
-    def __init__(self, result: "Result", backend: "BaseResultBackend") -> None:
+    def __init__(self, result: " Result[Any]", backend: BaseResultBackend) -> None:
         self._result = result
         self._backend = backend
 
@@ -35,17 +55,17 @@ class ResultChildren:
         """The number of children."""
         return await self._backend.get_children_count(self._result.id)
 
-    def iter_ids(self, *, count: Optional[int] = None) -> AsyncGenerator[UUID, None]:
+    def iter_ids(self, *, count: Optional[int] = None) -> AsyncIterable[UUID]:
         """Iterate the IDs of the children, optionally limited to a set count."""
         return self._backend.iterate_children_ids(self._result.id, count=count)
 
     def iter_instances(
         self, *, count: Optional[int] = None
-    ) -> AsyncGenerator["Result", None]:
+    ) -> AsyncIterable[Result[Any]]:
         """Iterate the instances of the children, optionally limited to a set count."""
         return self._backend.iterate_children(self._result.id, count=count)
 
-    async def add(self, *children_ids: UUID):
+    async def add(self, *children_ids: UUID) -> None:
         """For internal use."""
         await self._backend.add_children(self._result.id, *children_ids)
 
@@ -74,7 +94,7 @@ class ResultValueHolder(BaseModel):
         return value
 
     @classmethod
-    def not_ready(cls):
+    def not_ready(cls) -> ResultValueHolder:
         """
         Creates a value holder which is not ready yet.
         """
@@ -82,12 +102,12 @@ class ResultValueHolder(BaseModel):
         return cls(value_type=_serialize_name(value), raw_value=value)
 
 
-class ResultValue:
+class ResultValue(Generic[_Return]):
     """
     Represents information about the value of a Result.
     """
 
-    def __init__(self, result: "Result", backend: "BaseResultBackend") -> None:
+    def __init__(self, result: "Result[_Return]", backend: BaseResultBackend) -> None:
         self._result = result
         self._backend = backend
 
@@ -104,7 +124,7 @@ class ResultValue:
         holder = await self.get_value_holder()
         return holder.deserialize()
 
-    async def set_raw_value(self, value: Any):
+    async def set_raw_value(self, value: Any) -> None:
         if isinstance(value, BaseException):
             value = _ExceptionInfo.from_exception(value)
 
@@ -122,7 +142,7 @@ class _ExceptionInfo(BaseModel):
     raw_data_encoding: Optional[str]
 
     @classmethod
-    def from_exception(cls, exception: BaseException):
+    def from_exception(cls, exception: BaseException) -> _ExceptionInfo:
         try:
             raw_data = pickle.dumps(exception)
         except Exception as unencodable:  # pylint: disable=broad-except
@@ -146,17 +166,20 @@ class _ExceptionInfo(BaseModel):
         )
 
     @property
-    def exception(self) -> Exception:
+    def exception(self) -> BaseException:
         if (
             self.raw_data is not None
             and self.raw_data_encoding == "application/python-pickle"
         ):
-            return pickle.loads(base64.b64decode(self.raw_data))
+            v = pickle.loads(base64.b64decode(self.raw_data))
+
+            if isinstance(v, BaseException):
+                return v
 
         return Exception(self.message)
 
 
-class Result(BaseModel):
+class Result(BaseModel, Generic[_Return]):
     """
     Represents the result of executing a [`Request`][mognet.Request].
 
@@ -182,11 +205,11 @@ class Result(BaseModel):
 
     request_kwargs_repr: Optional[str]
 
-    _backend: "BaseResultBackend" = PrivateAttr()
+    _backend: BaseResultBackend = PrivateAttr()
     _children: Optional[ResultChildren] = PrivateAttr()
-    _value: Optional[ResultValue] = PrivateAttr()
+    _value: Optional[ResultValue[_Return]] = PrivateAttr()
 
-    def __init__(self, backend: "BaseResultBackend", **data) -> None:
+    def __init__(self, backend: BaseResultBackend, **data: Any) -> None:
         super().__init__(**data)
         self._backend = backend
         self._children = None
@@ -202,7 +225,7 @@ class Result(BaseModel):
         return self._children
 
     @property
-    def value(self) -> ResultValue:
+    def value(self) -> ResultValue[_Return]:
         """Get information about the value of this Result"""
         if self._value is None:
             self._value = ResultValue(self, self._backend)
@@ -234,7 +257,7 @@ class Result(BaseModel):
         return self.started - self.created
 
     @property
-    def done(self):
+    def done(self) -> bool:
         """
         True if the result is in a terminal state (e.g., SUCCESS, FAILURE).
         See `READY_STATES`.
@@ -242,17 +265,17 @@ class Result(BaseModel):
         return self.state in READY_STATES
 
     @property
-    def successful(self):
+    def successful(self) -> bool:
         """True if the result was successful."""
         return self.state in SUCCESS_STATES
 
     @property
-    def failed(self):
+    def failed(self) -> bool:
         """True if the result failed or was revoked."""
         return self.state in ERROR_STATES
 
     @property
-    def revoked(self):
+    def revoked(self) -> bool:
         """True if the result was revoked."""
         return self.state == ResultState.REVOKED
 
@@ -270,7 +293,7 @@ class Result(BaseModel):
 
         await self._refresh(updated_result)
 
-    async def revoke(self) -> "Result":
+    async def revoke(self) -> "Result[_Return]":
         """
         Revoke this Result.
 
@@ -283,7 +306,7 @@ class Result(BaseModel):
         await self._backend.set(self.id, self)
         return self
 
-    async def get(self) -> Any:
+    async def get(self) -> _Return:
         """
         Gets the value of this `Result` instance.
 
@@ -319,13 +342,13 @@ class Result(BaseModel):
 
             raise value
 
-        return value
+        return value  # type: ignore
 
     async def set_result(
         self,
         value: Any,
         state: ResultState = ResultState.SUCCESS,
-    ) -> "Result":
+    ) -> "Result[_Return]":
         """
         Set this Result to a success state, and store the value
         which will be return when one `get()`s this Result's value.
@@ -345,7 +368,7 @@ class Result(BaseModel):
         self,
         exc: BaseException,
         state: ResultState = ResultState.FAILURE,
-    ) -> "Result":
+    ) -> "Result[_Return]":
         """
         Set this Result to an error state, and store the exception
         which will be raised if one attempts to `get()` this Result's
@@ -365,7 +388,7 @@ class Result(BaseModel):
 
         return self
 
-    async def start(self, *, node_id: Optional[str] = None) -> "Result":
+    async def start(self, *, node_id: Optional[str] = None) -> "Result[_Return]":
         """
         Sets this `Result` as RUNNING, and logs the event.
         """
@@ -379,7 +402,7 @@ class Result(BaseModel):
 
         return self
 
-    async def resume(self, *, node_id: Optional[str] = None) -> "Result":
+    async def resume(self, *, node_id: Optional[str] = None) -> "Result[_Return]":
         if node_id is not None:
             self.node_id = node_id
 
@@ -390,7 +413,7 @@ class Result(BaseModel):
 
         return self
 
-    async def suspend(self) -> "Result":
+    async def suspend(self) -> "Result[_Return]":
         """
         Sets this `Result` as SUSPENDED, and logs the event.
         """
@@ -411,7 +434,7 @@ class Result(BaseModel):
         """
         from .result_tree import ResultTree
 
-        async def get_tree(result: Result, depth=1):
+        async def get_tree(result: Result[Any], depth: int = 1) -> ResultTree:
             _log.debug(
                 "Getting tree of result id=%r, depth=%r max_depth=%r",
                 result.id,
@@ -456,7 +479,7 @@ class Result(BaseModel):
         """Set metadata on this Result."""
         await self._backend.set_metadata(self.id, **kwargs)
 
-    async def _refresh(self, updated_result: Optional["Result"] = None):
+    async def _refresh(self, updated_result: Optional["Result[Any]"] = None) -> None:
         updated_result = updated_result or await self._backend.get(self.id)
 
         if updated_result is None:
@@ -468,10 +491,10 @@ class Result(BaseModel):
 
             setattr(self, k, v)
 
-    async def _update(self):
+    async def _update(self) -> None:
         await self._backend.set(self.id, self)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         v = f"Result[{self.name or 'unknown'}, id={self.id!r}, state={self.state!r}]"
 
         if self.request_kwargs_repr is not None:
@@ -483,12 +506,12 @@ class Result(BaseModel):
     def __hash__(self) -> int:
         return hash(f"Result_{self.id}")
 
-    def __await__(self):
+    def __await__(self) -> Generator[Any, None, _Return]:
         yield from self.wait().__await__()
         value = yield from self.get().__await__()
         return value
 
-    async def delete(self, include_children: bool = True):
+    async def delete(self, include_children: bool = True) -> None:
         """
         Delete this Result from the backend.
 
@@ -496,7 +519,7 @@ class Result(BaseModel):
         """
         await self._backend.delete(self.id, include_children=include_children)
 
-    async def set_ttl(self, ttl: timedelta, include_children: bool = True):
+    async def set_ttl(self, ttl: timedelta, include_children: bool = True) -> None:
         """
         Set TTL on this Result.
 
@@ -505,16 +528,16 @@ class Result(BaseModel):
         await self._backend.set_ttl(self.id, ttl, include_children=include_children)
 
 
-def _get_attr(obj_spec):
+def _get_attr(obj_spec: str) -> Type[Any]:
     module, cls_name = obj_spec.split(":")
 
     mod = importlib.import_module(module)
-    cls = getattr(mod, cls_name)
+    cls: Type[Any] = getattr(mod, cls_name)
 
     return cls
 
 
-def _serialize_name(v):
+def _serialize_name(v: Any) -> str:
     if isinstance(v, type):
         return f"{v.__module__}:{v.__name__}"
 

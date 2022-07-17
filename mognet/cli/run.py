@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from asyncio import AbstractEventLoop
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import aiorun
 import typer
@@ -26,7 +26,7 @@ def run(
         metavar="exclude-queues",
         help="Comma-separated list of the ONLY queues to NOT listen on.",
     ),
-):
+) -> int:
     """Run the app"""
 
     app = state["app_instance"]
@@ -42,17 +42,19 @@ def run(
 
     queues.ensure_valid()
 
-    async def start():
+    async def start() -> None:
         async with app:
             await app.start()
 
-    async def stop(_: AbstractEventLoop):
+    async def stop(_: AbstractEventLoop) -> None:
         _log.info("Going to close app as part of a shut down")
         await app.close()
 
     pending_exception_to_raise: BaseException = SystemExit(0)
 
-    def custom_exception_handler(loop: AbstractEventLoop, context: dict):
+    def custom_exception_handler(
+        loop: AbstractEventLoop, context: Dict[Any, Any]
+    ) -> None:
         """See: https://docs.python.org/3/library/asyncio-eventloop.html#error-handling-api"""
 
         nonlocal pending_exception_to_raise

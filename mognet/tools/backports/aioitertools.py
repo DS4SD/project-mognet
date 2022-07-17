@@ -6,7 +6,7 @@ Should be upstreamed here: https://github.com/omnilib/aioitertools/pull/103
 
 import asyncio
 from contextlib import suppress
-from typing import AsyncGenerator, AsyncIterable, Iterable, TypeVar
+from typing import Any, AsyncGenerator, AsyncIterable, Dict, Iterable, TypeVar
 
 T = TypeVar("T")
 
@@ -34,7 +34,7 @@ async def as_generated(
             ...  # intermixed values yielded from gen1 and gen2
     """
 
-    queue: asyncio.Queue[dict] = asyncio.Queue()
+    queue: asyncio.Queue[Dict[Any, Any]] = asyncio.Queue()
 
     tailer_count: int = 0
 

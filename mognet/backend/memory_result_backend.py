@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 from datetime import timedelta
-from typing import Any, AsyncGenerator, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, Optional, Set, Tuple
 from uuid import UUID
 
 from mognet.backend.backend_config import ResultBackendConfig
 from mognet.backend.base_result_backend import AppParameters, BaseResultBackend
 from mognet.exceptions.result_exceptions import ResultValueLost
-from mognet.model.result import Result, ResultValueHolder
+
+if TYPE_CHECKING:
+    from mognet.model.result import Result, ResultValueHolder
 
 
 class MemoryResultBackend(BaseResultBackend):
@@ -17,22 +21,22 @@ class MemoryResultBackend(BaseResultBackend):
     def __init__(self, config: ResultBackendConfig, app: AppParameters) -> None:
         super().__init__(config, app)
 
-        self._results: Dict[UUID, Result] = {}
+        self._results: Dict[UUID, Result[Any]] = {}
         self._result_tree: Dict[UUID, Set[UUID]] = {}
         self._values: Dict[UUID, ResultValueHolder] = {}
         self._metadata: Dict[UUID, Dict[str, Any]] = {}
 
-    async def get(self, result_id: UUID) -> Optional[Result]:
+    async def get(self, result_id: UUID) -> Optional[Result[Any]]:
         return self._results.get(result_id, None)
 
-    async def set(self, result_id: UUID, result: Result):
+    async def set(self, result_id: UUID, result: Result[Any]) -> None:
         self._results[result_id] = result
 
     async def get_children_count(self, parent_result_id: UUID) -> int:
         return len(self._result_tree.get(parent_result_id, set()))
 
     async def iterate_children_ids(
-        self, parent_result_id: UUID, *, count: int = None
+        self, parent_result_id: UUID, *, count: Optional[int] = None
     ) -> AsyncGenerator[UUID, None]:
         children = self._result_tree[parent_result_id]
 
@@ -43,8 +47,8 @@ class MemoryResultBackend(BaseResultBackend):
                 break
 
     async def iterate_children(
-        self, parent_result_id: UUID, *, count: int = None
-    ) -> AsyncGenerator[Result, None]:
+        self, parent_result_id: UUID, *, count: Optional[int] = None
+    ) -> AsyncGenerator[Result[Any], None]:
         async for child_id in self.iterate_children_ids(parent_result_id, count=count):
             child = self._results.get(child_id, None)
 
@@ -62,7 +66,7 @@ class MemoryResultBackend(BaseResultBackend):
 
         return value
 
-    async def set_value(self, result_id: UUID, value: ResultValueHolder):
+    async def set_value(self, result_id: UUID, value: ResultValueHolder) -> None:
         self._values[result_id] = value
 
     async def get_metadata(self, result_id: UUID) -> Dict[str, Any]:
@@ -72,7 +76,7 @@ class MemoryResultBackend(BaseResultBackend):
     async def set_metadata(self, result_id: UUID, **kwargs: Any) -> None:
         self._metadata.setdefault(result_id, {}).update(kwargs)
 
-    async def delete(self, result_id: UUID, include_children: bool = True):
+    async def delete(self, result_id: UUID, include_children: bool = True) -> None:
         if include_children:
             for child_id in self._result_tree.get(result_id, set()):
                 await self.delete(child_id, include_children=include_children)
@@ -83,10 +87,10 @@ class MemoryResultBackend(BaseResultBackend):
 
     async def set_ttl(
         self, result_id: UUID, ttl: timedelta, include_children: bool = True
-    ):
+    ) -> None:
         pass
 
-    async def close(self):
+    async def close(self) -> None:
         self._metadata = {}
         self._result_tree = {}
         self._results = {}

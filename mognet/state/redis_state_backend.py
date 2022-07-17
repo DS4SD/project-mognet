@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import json
 import logging
-from typing import TYPE_CHECKING, Any, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 from uuid import UUID
 
 from redis.asyncio import Redis, from_url
+from typing_extensions import TypeAlias
 
 from mognet.exceptions.base_exceptions import NotConnected
 from mognet.state.base_state_backend import BaseStateBackend
@@ -15,6 +18,7 @@ if TYPE_CHECKING:
 
 
 _TValue = TypeVar("_TValue")
+_Redis: TypeAlias = "Redis[Any]"
 
 _log = logging.getLogger(__name__)
 
@@ -24,18 +28,18 @@ class RedisStateBackend(BaseStateBackend):
         super().__init__()
 
         self.config = config
-        self.__redis = None
+        self.__redis: Optional[_Redis] = None
         self.app = app
 
     @property
-    def _redis(self) -> Redis:
+    def _redis(self) -> _Redis:
         if self.__redis is None:
             raise NotConnected
 
         return self.__redis
 
     async def get(
-        self, request_id: UUID, key: str, default: _TValue = None
+        self, request_id: UUID, key: str, default: Optional[_TValue] = None
     ) -> Optional[_TValue]:
         state_key = self._format_key(request_id)
 
@@ -55,9 +59,9 @@ class RedisStateBackend(BaseStateBackend):
             )
             return default
 
-        return json.loads(value)
+        return cast(_TValue, json.loads(value))
 
-    async def set(self, request_id: UUID, key: str, value: Any):
+    async def set(self, request_id: UUID, key: str, value: Any) -> None:
         state_key = self._format_key(request_id)
 
         async with self._redis.pipeline(transaction=True) as tr:
@@ -68,7 +72,7 @@ class RedisStateBackend(BaseStateBackend):
             await tr.execute()
 
     async def pop(
-        self, request_id: UUID, key: str, default: _TValue = None
+        self, request_id: UUID, key: str, default: Optional[_TValue] = None
     ) -> Optional[_TValue]:
         state_key = self._format_key(request_id)
 
@@ -89,14 +93,14 @@ class RedisStateBackend(BaseStateBackend):
             )
             return default
 
-        return json.loads(value)
+        return cast(_TValue, json.loads(value))
 
-    async def clear(self, request_id: UUID):
+    async def clear(self, request_id: UUID) -> None:
         state_key = self._format_key(request_id)
 
         _log.debug("Clearing state of id=%r", state_key)
 
-        return await self._redis.delete(state_key)
+        await self._redis.delete(state_key)
 
     def _format_key(self, result_id: UUID) -> str:
         key = f"{self.app.name}.mognet.state.{result_id}"
@@ -105,26 +109,26 @@ class RedisStateBackend(BaseStateBackend):
 
         return key
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> RedisStateBackend:
         await self.connect()
         return self
 
-    async def __aexit__(self, *args, **kwargs):
+    async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         await self.close()
 
-    async def connect(self):
-        redis: Redis = from_url(
+    async def connect(self) -> None:
+        redis: _Redis = from_url(
             self.config.redis.url,
             max_connections=self.config.redis.max_connections,
         )
         self.__redis = redis
 
-    async def close(self):
+    async def close(self) -> None:
         redis = self.__redis
 
         if redis is not None:
             self.__redis = None
             await redis.close()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"RedisStateBackend(url={censor_credentials(self.config.redis.url)!r})"

@@ -1,22 +1,21 @@
 from datetime import datetime, timedelta
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
-from typing_extensions import TypeAlias
+from typing import Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
 from uuid import UUID, uuid4
 
-from pydantic import conint
+from pydantic import BaseModel, conint
 from pydantic.fields import Field
-from pydantic.generics import GenericModel
+from typing_extensions import TypeAlias
 
 TReturn = TypeVar("TReturn")
 
 Priority: TypeAlias = conint(ge=0, le=10)  # type: ignore
 
 
-class Request(GenericModel, Generic[TReturn]):
+class Request(BaseModel, Generic[TReturn]):
     id: UUID = Field(default_factory=uuid4)
     name: str
 
-    args: tuple = ()
+    args: Tuple[Any, ...] = ()
     kwargs: Dict[str, Any] = Field(default_factory=dict)
 
     stack: List[UUID] = Field(default_factory=list)
@@ -48,7 +47,7 @@ class Request(GenericModel, Generic[TReturn]):
     # Task priority. The higher the value, the higher the priority.
     priority: Priority = 5
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         msg = f"{self.name}[id={self.id!r}]"
 
         if self.kwargs_repr is not None:

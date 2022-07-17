@@ -29,7 +29,7 @@ class ResultState(str, Enum):
     # Invalid task
     INVALID = "INVALID"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.name!r}"
 
 

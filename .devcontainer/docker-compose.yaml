@@ -24,6 +24,7 @@ services:
         hard: 8192
     ports:
       - 5672:5672
+      - 15672:15672
 
 volumes:
   results_backend_data: {}

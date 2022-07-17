@@ -7,6 +7,7 @@ from typing import (
     Awaitable,
     Callable,
     NamedTuple,
+    Optional,
     Tuple,
     Type,
     TypeVar,
@@ -19,7 +20,7 @@ _T = TypeVar("_T")
 _log = logging.getLogger(__name__)
 
 
-async def _noop(*args, **kwargs):
+async def _noop(*args: Any, **kwargs: Any) -> None:
     pass
 
 
@@ -28,9 +29,9 @@ def retryableasyncmethod(
     *,
     max_attempts: Union[int, str],
     wait_timeout: Union[float, str],
-    lock: Union[asyncio.Lock, str] = None,
-    on_retry: Union[Callable[[BaseException], Awaitable], str] = None,
-):
+    lock: Optional[Union[asyncio.Lock, str]] = None,
+    on_retry: Optional[Union[Callable[[BaseException], Awaitable[Any]], str]] = None,
+) -> Callable[[_T], _T]:
     """
     Decorator to wrap an async method and make it retryable.
     """
@@ -42,10 +43,12 @@ def retryableasyncmethod(
         f: Any = cast(Any, func)
 
         @wraps(f)
-        async def async_retryable_decorator(self, *args, **kwargs):
+        async def async_retryable_decorator(
+            self: Any, *args: Any, **kwargs: Any
+        ) -> Any:
             last_exc = None
 
-            retry = _noop
+            retry: Callable[..., Any] = _noop
             if isinstance(on_retry, str):
                 retry = getattr(self, on_retry)
             elif callable(on_retry):

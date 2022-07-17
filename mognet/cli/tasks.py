@@ -32,7 +32,7 @@ async def get(
         metavar="include-value",
         help="If passed, the task's result (or exception) will be printed",
     ),
-):
+) -> None:
     """Get a task's details"""
 
     async with state["app_instance"] as app:
@@ -88,7 +88,7 @@ async def revoke(
         metavar="force",
         help="Attempt revoking anyway if the result is complete. Helps cleaning up cases where subtasks may have been spawned.",
     ),
-):
+) -> None:
     """Revoke a task"""
 
     async with state["app_instance"] as app:
@@ -124,7 +124,7 @@ async def tree(
     max_depth: int = typer.Option(3, metavar="max-depth"),
     max_width: int = typer.Option(16, metavar="max-width"),
     poll: Optional[int] = typer.Option(None, metavar="poll"),
-):
+) -> None:
     """Get the tree (descendants) of a task"""
 
     async with state["app_instance"] as app:
@@ -144,7 +144,9 @@ async def tree(
             if format == "text":
                 t = treelib.Tree()
 
-                def build_tree(n: ResultTree, parent: Optional[ResultTree] = None):
+                def build_tree(
+                    n: ResultTree, parent: Optional[ResultTree] = None
+                ) -> None:
                     t.create_node(
                         tag=text_label_format.format(**n.dict()),
                         identifier=n.result.id,

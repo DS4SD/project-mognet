@@ -1,4 +1,4 @@
-from typing import List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from pydantic import BaseModel
 
@@ -6,13 +6,13 @@ from .result import Result
 
 
 class ResultTree(BaseModel):
-    result: "Result"
+    result: Result[Any]
     children: List["ResultTree"]
 
     def __str__(self) -> str:
         return f"{self.result.name}(id={self.result.id!r}, state={self.result.state!r}, node_id={self.result.node_id!r})"
 
-    def dict(self, **kwargs):
+    def dict(self, **kwargs: Any) -> Dict[str, Any]:
         return {
             "id": self.result.id,
             "name": self.result.name,

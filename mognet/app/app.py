@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import importlib
 import logging
@@ -15,6 +17,7 @@ from typing import (
     List,
     Optional,
     Set,
+    Type,
     TypeVar,
     Union,
     cast,
@@ -23,7 +26,6 @@ from typing import (
 
 from aio_pika.tools import shield
 
-from mognet.backend.base_result_backend import BaseResultBackend
 from mognet.backend.redis_result_backend import RedisResultBackend
 from mognet.broker.amqp_broker import AmqpBroker
 from mognet.broker.base_broker import (
@@ -35,7 +37,8 @@ from mognet.broker.base_broker import (
 from mognet.context.context import Context
 from mognet.exceptions.base_exceptions import CouldNotSubmit, ImproperlyConfigured
 from mognet.middleware.middleware import Middleware
-from mognet.model.result import Result, ResultState
+from mognet.model.result import Result
+from mognet.model.result_state import ResultState
 from mognet.primitives.queries import QueryRequestMessage, StatusResponseMessage
 from mognet.primitives.request import Request
 from mognet.primitives.revoke import Revoke
@@ -54,11 +57,15 @@ else:
 
 if TYPE_CHECKING:
     from mognet.app.app_config import AppConfig
+    from mognet.backend.base_result_backend import BaseResultBackend
+
 
 _log = logging.getLogger(__name__)
 
 _P = ParamSpec("_P")
 _Return = TypeVar("_Return")
+
+_AnySvc = Union[Type[ClassService[Any]], Callable[..., Any]]
 
 
 class App:
@@ -86,7 +93,7 @@ class App:
 
     # Mapping of [service name] -> dependency object,
     # should be accessed via Context#get_service.
-    services: Dict[Any, Callable]
+    services: Dict[_AnySvc, _AnySvc]
 
     # Holds references to all the tasks.
     task_registry: TaskRegistry
@@ -100,10 +107,10 @@ class App:
     worker: Optional[Worker]
 
     # Background tasks spawned by this app.
-    _consume_control_task: Optional[Future] = None
-    _heartbeat_task: Optional[Future] = None
+    _consume_control_task: Optional["Future[None]"] = None
+    _heartbeat_task: Optional["Future[None]"] = None
 
-    _worker_task: Optional[Future]
+    _worker_task: Optional["Future[None]"]
 
     _middleware: List[Middleware]
 
@@ -140,9 +147,9 @@ class App:
         self.worker = None
 
         # Event that gets set when the app is closed
-        self._run_result = None
+        self._run_result: Optional["asyncio.Future[None]"] = None
 
-    def add_middleware(self, mw_inst: Middleware):
+    def add_middleware(self, mw_inst: Middleware) -> None:
         """
         Adds middleware to this app.
 
@@ -154,7 +161,7 @@ class App:
 
         self._middleware.append(mw_inst)
 
-    async def start(self):
+    async def start(self) -> None:
         """
         Starts the app.
         """
@@ -212,7 +219,9 @@ class App:
         finally:
             await responses.aclose()
 
-    async def submit(self, req: "Request", context: Optional[Context] = None) -> Result:
+    async def submit(
+        self, req: "Request[_Return]", context: Optional[Context] = None
+    ) -> Result[_Return]:
         """
         Submits a request for execution.
 
@@ -231,7 +240,7 @@ class App:
                 req.kwargs_repr = format_kwargs_repr(req.args, req.kwargs)
                 _log.debug("Set default kwargs_repr on Request %r", req)
 
-            res = Result(
+            res: Result[_Return] = Result(
                 self.result_backend,
                 id=req.id,
                 name=req.name,
@@ -333,7 +342,7 @@ class App:
         func: Callable[Concatenate["Context", _P], Any],
         *args: _P.args,
         **kwargs: _P.kwargs,
-    ) -> Request:
+    ) -> Request[Any]:
         """
         Creates a Request object from the function that was decorated with @task,
         and the provided arguments.
@@ -370,7 +379,7 @@ class App:
 
         ...
 
-    async def run(self, request, *args, **kwargs) -> Any:
+    async def run(self, request: Any, *args: Any, **kwargs: Any) -> Any:
 
         if not isinstance(request, Request):
             request = self.create_request(*args, **kwargs)
@@ -379,7 +388,9 @@ class App:
 
         return await res
 
-    async def revoke(self, request_id: uuid.UUID, *, force: bool = False) -> Result:
+    async def revoke(
+        self, request_id: uuid.UUID, *, force: bool = False
+    ) -> Result[Any]:
         """
         Revoke the execution of a request.
 
@@ -423,7 +434,7 @@ class App:
 
         return res
 
-    async def connect(self):
+    async def connect(self) -> None:
         """Connect this app and its components to their respective backends."""
         if self._connected:
             return
@@ -449,16 +460,16 @@ class App:
 
         _log.debug("Connected to state backend %s", self.state_backend)
 
-    async def __aenter__(self):
+    async def __aenter__(self):  # type: ignore
         await self.connect()
 
         return self
 
-    async def __aexit__(self, *args, **kwargs):
+    async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         await self.close()
 
-    @shield
-    async def close(self):
+    @shield  # type: ignore
+    async def close(self) -> None:
         """Close this app and its components's backends."""
 
         _log.info("Closing app")
@@ -470,7 +481,7 @@ class App:
 
         _log.info("Closed app")
 
-    async def _stop(self):
+    async def _stop(self) -> None:
         await self._call_on_stopping_middleware()
 
         if self._heartbeat_task is not None:
@@ -571,11 +582,11 @@ class App:
     def _create_state_backend(self) -> BaseStateBackend:
         return RedisStateBackend(self.config.state_backend, app=self)
 
-    def _load_modules(self):
+    def _load_modules(self) -> None:
         for module in self.config.imports:
             importlib.import_module(module)
 
-    def _log_tasks_and_queues(self):
+    def _log_tasks_and_queues(self) -> None:
 
         all_tasks = self.task_registry.registered_task_names
 
@@ -591,7 +602,7 @@ class App:
 
         _log.info("Registered %r queues:\n%s", len(all_queues), queues_msg)
 
-    async def _setup_broker(self):
+    async def _setup_broker(self) -> None:
         _log.debug("Connecting to broker %s", self.broker)
 
         await self.broker.connect()
@@ -605,7 +616,7 @@ class App:
 
         _log.debug("Setup queues")
 
-    async def _stop_worker(self):
+    async def _stop_worker(self) -> None:
         if self.worker is None or not self._worker_task:
             _log.debug("No worker running")
             return
@@ -629,7 +640,7 @@ class App:
             self.worker = None
             self._worker_task = None
 
-    async def _background_heartbeat(self):
+    async def _background_heartbeat(self) -> None:
         """
         Background task that checks if the event loop was blocked
         for too long.
@@ -659,7 +670,7 @@ class App:
             else:
                 _log.debug("Event loop heartbeat: %.2fs", diff)
 
-    async def _consume_control_queue(self):
+    async def _consume_control_queue(self) -> None:
         """
         Reads messages from the control queue and dispatches them.
         """
@@ -678,7 +689,7 @@ class App:
                     "Could not process control queue message %r", msg, exc_info=exc
                 )
 
-    async def _process_control_message(self, msg: IncomingMessagePayload):
+    async def _process_control_message(self, msg: IncomingMessagePayload) -> None:
         _log.debug("Received control message id=%r", msg.id)
 
         try:
@@ -736,14 +747,16 @@ class App:
         finally:
             await msg.ack()
 
-    async def _on_submitting(self, req: "Request", context: Optional["Context"]):
+    async def _on_submitting(
+        self, req: Request[Any], context: Optional["Context"]
+    ) -> None:
         for mw_inst in self._middleware:
             try:
                 await mw_inst.on_request_submitting(req, context=context)
             except Exception as mw_exc:  # pylint: disable=broad-except
                 _log.error("Middleware failed", exc_info=mw_exc)
 
-    def _get_task_route(self, req: Union[str, Request]):
+    def _get_task_route(self, req: Union[str, Request[Any]]) -> str:
         if isinstance(req, Request):
             if req.queue_name is not None:
                 _log.debug(
@@ -775,7 +788,7 @@ class App:
 
         return default_queue
 
-    async def _call_on_starting_middleware(self):
+    async def _call_on_starting_middleware(self) -> None:
         for mw in self._middleware:
             try:
                 await mw.on_app_starting(self)
@@ -784,14 +797,14 @@ class App:
                     "Middleware %r failed on 'on_app_starting'", mw, exc_info=exc
                 )
 
-    async def _call_on_started_middleware(self):
+    async def _call_on_started_middleware(self) -> None:
         for mw in self._middleware:
             try:
                 await mw.on_app_started(self)
             except Exception as exc:  # pylint: disable=broad-except
                 _log.debug("Middleware %r failed on 'on_app_started'", mw, exc_info=exc)
 
-    async def _call_on_stopping_middleware(self):
+    async def _call_on_stopping_middleware(self) -> None:
         for mw in self._middleware:
             try:
                 await mw.on_app_stopping(self)
@@ -800,7 +813,7 @@ class App:
                     "Middleware %r failed on 'on_app_stopping'", mw, exc_info=exc
                 )
 
-    async def _call_on_stopped_middleware(self):
+    async def _call_on_stopped_middleware(self) -> None:
         for mw in self._middleware:
             try:
                 await mw.on_app_stopped(self)

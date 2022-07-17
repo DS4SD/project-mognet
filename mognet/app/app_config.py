@@ -19,10 +19,10 @@ class Queues(BaseModel):
     exclude: Set[str] = Field(default_factory=set)
 
     @property
-    def is_valid(self):
+    def is_valid(self) -> bool:
         return not (len(self.include) > 0 and len(self.exclude) > 0)
 
-    def ensure_valid(self):
+    def ensure_valid(self) -> None:
         if not self.is_valid:
             raise ValueError(
                 "Cannot specify both 'include' and 'exclude'. Choose either or none."
