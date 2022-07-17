@@ -42,6 +42,9 @@ mkdocs-material = "^8.2.6"
 mkdocstrings = {version = "^0.18.1", extras = ["python-legacy"]}
 mkdocs-typer = "^0.0.2"
 isort = "^5.10.1"
+types-tabulate = "^0.8.11"
+mypy = "^0.961"
+types-redis = "^4.3.4"
 
 [build-system]
 # Allow the package to be installed with `pip install -e ...`,
@@ -67,3 +70,21 @@ py_version = 38
 profile = "black"
 src_paths = ["mognet", "test"]
 known_first_party = ["mognet"]
+
+[tool.mypy]
+python_version = 3.8
+pretty = true
+
+# Silence errors for third-party packages that don't have
+# typings available.
+[[tool.mypy.overrides]]
+module = "pytest_asyncio.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "aiorun.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "treelib.*"
+ignore_missing_imports = true

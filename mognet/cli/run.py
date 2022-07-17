@@ -50,7 +50,7 @@ def run(
         _log.info("Going to close app as part of a shut down")
         await app.close()
 
-    pending_exception_to_raise = SystemExit(0)
+    pending_exception_to_raise: BaseException = SystemExit(0)
 
     def custom_exception_handler(loop: AbstractEventLoop, context: dict):
         """See: https://docs.python.org/3/library/asyncio-eventloop.html#error-handling-api"""

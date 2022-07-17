@@ -50,7 +50,7 @@ class Worker:
         self,
         *,
         app: "App",
-        middleware: List["Middleware"] = None,
+        middleware: Optional[List["Middleware"]] = None,
     ) -> None:
         self.app = app
         self.running_tasks = {}
@@ -75,7 +75,7 @@ class Worker:
         except Exception as exc:  # pylint: disable=broad-except
             _log.error("Error during consumption", exc_info=exc)
 
-    async def _handle_connection_lost(self, exc: BaseException = None):
+    async def _handle_connection_lost(self, exc: Optional[BaseException] = None):
         _log.error("Handling connection lost event, stopping all tasks", exc_info=exc)
 
         # No point in NACKing, because we have been disconnected
@@ -211,15 +211,18 @@ class Worker:
         # for cases when a request is cancelled before it's started.
         # Even worse, check that we're not trying to start a request whose
         # result might have been evicted.
-        result = await self.app.result_backend.get(req.id)
+        res = await self.app.result_backend.get(req.id)
 
-        if result is None:
+        if res is None:
             _log.error(
                 "Attempting to run task %r, but it's result doesn't exist on the backend. Discarding",
                 req,
             )
             await self.remove_suspended_task(req.id)
             return
+
+        # Shut up, mypy. 'res' cannot be None after this point.
+        result: Result = res
 
         context = self._create_context(req)
 
@@ -381,7 +384,7 @@ class Worker:
             value = await fut
 
             if req.id in self.running_tasks:
-                await asyncio.shield(result.set_result(value))
+                result = await asyncio.shield(result.set_result(value))
 
                 _log.info(
                     "Request %r finished with status %r in %.2fs",
@@ -472,7 +475,7 @@ class Worker:
         Returns said task, after adding completion handlers to it.
         """
         _log.debug("Parsing input of message id=%r as Request", payload.id)
-        req = Request.parse_obj(payload.payload)
+        req: Request = Request.parse_obj(payload.payload)
 
         async def request_processor():
             try:

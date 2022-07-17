@@ -130,7 +130,7 @@ class AmqpBroker(BaseBroker):
         self.config = config
 
         self._task_queues = {}
-        self._control_queue = None
+        self._control_queue: Optional[Queue] = None
 
         # Lock to prevent duplicate queue declaration
         self._lock = Lock()
@@ -494,6 +494,8 @@ class AmqpBroker(BaseBroker):
                     await self._control_queue.bind(self._control_exchange)
 
                     _log.debug("Prepared control queue=%r", self._control_queue.name)
+
+        assert self._control_queue is not None
 
         return self._control_queue
 

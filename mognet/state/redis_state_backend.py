@@ -1,6 +1,7 @@
 import json
 import logging
 from typing import TYPE_CHECKING, Any, Optional, TypeVar
+from uuid import UUID
 
 from redis.asyncio import Redis, from_url
 
@@ -34,15 +35,15 @@ class RedisStateBackend(BaseStateBackend):
         return self.__redis
 
     async def get(
-        self, request_id: str, key: str, default: _TValue = None
+        self, request_id: UUID, key: str, default: _TValue = None
     ) -> Optional[_TValue]:
         state_key = self._format_key(request_id)
 
         async with self._redis.pipeline(transaction=True) as tr:
 
-            tr.hexists(state_key, key)
-            tr.hget(state_key, key)
-            tr.expire(state_key, self.config.redis.state_ttl)
+            _ = tr.hexists(state_key, key)
+            _ = tr.hget(state_key, key)
+            _ = tr.expire(state_key, self.config.redis.state_ttl)
 
             exists, value, *_ = await tr.execute()
 
@@ -56,27 +57,27 @@ class RedisStateBackend(BaseStateBackend):
 
         return json.loads(value)
 
-    async def set(self, request_id: str, key: str, value: Any):
+    async def set(self, request_id: UUID, key: str, value: Any):
         state_key = self._format_key(request_id)
 
         async with self._redis.pipeline(transaction=True) as tr:
 
-            tr.hset(state_key, key, json.dumps(value).encode())
-            tr.expire(state_key, self.config.redis.state_ttl)
+            _ = tr.hset(state_key, key, json.dumps(value).encode())
+            _ = tr.expire(state_key, self.config.redis.state_ttl)
 
             await tr.execute()
 
     async def pop(
-        self, request_id: str, key: str, default: _TValue = None
+        self, request_id: UUID, key: str, default: _TValue = None
     ) -> Optional[_TValue]:
         state_key = self._format_key(request_id)
 
         async with self._redis.pipeline(transaction=True) as tr:
 
-            tr.hexists(state_key, key)
-            tr.hget(state_key, key)
-            tr.hdel(state_key, key)
-            tr.expire(state_key, self.config.redis.state_ttl)
+            _ = tr.hexists(state_key, key)
+            _ = tr.hget(state_key, key)
+            _ = tr.hdel(state_key, key)
+            _ = tr.expire(state_key, self.config.redis.state_ttl)
 
             exists, value, *_ = await tr.execute()
 
@@ -90,14 +91,14 @@ class RedisStateBackend(BaseStateBackend):
 
         return json.loads(value)
 
-    async def clear(self, request_id: str):
+    async def clear(self, request_id: UUID):
         state_key = self._format_key(request_id)
 
         _log.debug("Clearing state of id=%r", state_key)
 
         return await self._redis.delete(state_key)
 
-    def _format_key(self, result_id: str) -> str:
+    def _format_key(self, result_id: UUID) -> str:
         key = f"{self.app.name}.mognet.state.{result_id}"
 
         _log.debug("Formatted state key=%r for id=%r", key, result_id)

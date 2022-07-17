@@ -14,7 +14,7 @@ class QueryResponseMessage(BaseModel):
 
     kind: str
     node_id: str
-    payload: dict
+    payload: BaseModel
 
 
 class StatusResponseMessage(QueryResponseMessage):

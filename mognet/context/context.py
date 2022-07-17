@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import inspect
 import logging
@@ -10,6 +12,7 @@ from typing import (
     Coroutine,
     Dict,
     List,
+    Optional,
     Set,
     Type,
     TypeVar,
@@ -167,16 +170,21 @@ class Context:
         )
 
     async def gather(
-        self, *results_or_ids: Union["Result", UUID], return_exceptions: bool = False
+        self, *results_or_ids: Union[Result, UUID], return_exceptions: bool = False
     ) -> List[Any]:
-        results = []
+        if not results_or_ids:
+            return []
+
+        results: List[Result] = []
         cancelled = False
         try:
+            result: Union[UUID, Optional[Result]]
             for result in results_or_ids:
                 if isinstance(result, UUID):
                     result = await self.app.result_backend.get(result)
 
-                results.append(result)
+                if result is not None:
+                    results.append(result)
 
             # If we transition from having no dependencies
             # to having some, then we should suspend.
@@ -188,7 +196,9 @@ class Context:
             if not had_dependencies and self._dependencies:
                 await asyncio.shield(self._suspend())
 
-            return await asyncio.gather(*results, return_exceptions=return_exceptions)
+            return list(
+                await asyncio.gather(*results, return_exceptions=return_exceptions)
+            )
         except asyncio.CancelledError:
             cancelled = True
             raise

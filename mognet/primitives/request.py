@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
-from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
+from typing_extensions import TypeAlias
 from uuid import UUID, uuid4
 
 from pydantic import conint
@@ -8,7 +9,7 @@ from pydantic.generics import GenericModel
 
 TReturn = TypeVar("TReturn")
 
-Priority = conint(ge=0, le=10)
+Priority: TypeAlias = conint(ge=0, le=10)  # type: ignore
 
 
 class Request(GenericModel, Generic[TReturn]):
