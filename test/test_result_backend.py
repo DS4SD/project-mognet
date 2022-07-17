@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Type
 from uuid import uuid4
 
 import pytest

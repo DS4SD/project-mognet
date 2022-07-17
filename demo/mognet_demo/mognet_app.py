@@ -5,7 +5,6 @@ It can be used both for submitting jobs and for launching the worker process via
 """
 
 from mognet_demo.config import DemoConfig
-from mognet_demo.middleware.auto_shutdown import AutoShutdownMiddleware
 
 from mognet import App
 

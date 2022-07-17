@@ -5,7 +5,7 @@ import logging
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 from uuid import UUID
 
-from redis.asyncio import Redis, from_url
+from redis.asyncio import from_url
 from typing_extensions import TypeAlias
 
 from mognet.exceptions.base_exceptions import NotConnected
@@ -14,6 +14,8 @@ from mognet.state.state_backend_config import StateBackendConfig
 from mognet.tools.urls import censor_credentials
 
 if TYPE_CHECKING:
+    from redis.asyncio import Redis  # noqa: F401
+
     from mognet.app.app import App
 
 

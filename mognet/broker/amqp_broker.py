@@ -9,7 +9,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     AsyncGenerator,
-    Awaitable,
     Callable,
     Coroutine,
     Dict,

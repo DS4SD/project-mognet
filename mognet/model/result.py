@@ -9,45 +9,43 @@ from datetime import datetime, timedelta
 from typing import (
     TYPE_CHECKING,
     Any,
-    AsyncGenerator,
     AsyncIterable,
-    Awaitable,
     Dict,
     Generator,
     Generic,
-    Iterable,
     Optional,
     Type,
     TypeVar,
-    cast,
 )
 from uuid import UUID
 
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 from pydantic.tools import parse_obj_as
-from typing_extensions import TypeAlias
 
 from mognet.exceptions.result_exceptions import ResultFailed, ResultNotReady, Revoked
+from mognet.model.result_state import (
+    ERROR_STATES,
+    READY_STATES,
+    SUCCESS_STATES,
+    ResultState,
+)
 from mognet.tools.dates import now_utc
-
-from .result_state import ERROR_STATES, READY_STATES, SUCCESS_STATES, ResultState
 
 if TYPE_CHECKING:
     from mognet.backend.base_result_backend import BaseResultBackend
 
     from .result_tree import ResultTree
 
-_log = logging.getLogger(__name__)
-
-_TSelf = TypeVar("_TSelf")
 _Return = TypeVar("_Return")
+
+_log = logging.getLogger(__name__)
 
 
 class ResultChildren:
     """The children of a Result."""
 
-    def __init__(self, result: " Result[Any]", backend: BaseResultBackend) -> None:
+    def __init__(self, result: "Result[Any]", backend: BaseResultBackend) -> None:
         self._result = result
         self._backend = backend
 

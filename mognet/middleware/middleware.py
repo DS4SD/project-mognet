@@ -1,13 +1,4 @@
-import sys
 from typing import TYPE_CHECKING, Any, Optional
-
-from mognet.model.result import Result
-
-if sys.version_info >= (3, 10):
-    from typing import Protocol
-else:
-    from typing_extensions import Protocol
-
 
 if TYPE_CHECKING:
     from mognet.app.app import App

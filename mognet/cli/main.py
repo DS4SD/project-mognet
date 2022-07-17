@@ -2,7 +2,6 @@ import importlib
 import logging
 import os
 import sys
-from typing import TYPE_CHECKING
 
 import typer
 
@@ -43,9 +42,9 @@ def _get_app(app_pointer: str) -> "App":
 
 @main.callback()
 def callback(
-    app: str = typer.Argument(..., help="App module to import"),
-    log_level: LogLevel = typer.Option("INFO", metavar="log-level"),
-    log_format: str = typer.Option(
+    app: str = typer.Argument(..., help="App module to import"),  # noqa: B008
+    log_level: LogLevel = typer.Option("INFO", metavar="log-level"),  # noqa: B008
+    log_format: str = typer.Option(  # noqa: B008
         "%(asctime)s:%(name)s:%(levelname)s:%(message)s", metavar="log-format"
     ),
 ) -> None:

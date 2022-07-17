@@ -2,18 +2,7 @@ import asyncio
 import inspect
 import logging
 from functools import wraps
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, Awaitable, Callable, Optional, Tuple, Type, TypeVar, Union, cast
 
 _T = TypeVar("_T")
 

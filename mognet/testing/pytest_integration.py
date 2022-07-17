@@ -1,7 +1,6 @@
 import asyncio
 from typing import AsyncIterable, Callable
 
-import pytest
 import pytest_asyncio
 
 from mognet import App

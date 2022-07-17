@@ -1,8 +1,8 @@
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import Any, Dict, List
 
 from pydantic import BaseModel
 
-from .result import Result
+from mognet.model.result import Result
 
 
 class ResultTree(BaseModel):

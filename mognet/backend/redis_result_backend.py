@@ -8,6 +8,7 @@ import logging
 from asyncio import shield
 from datetime import timedelta
 from typing import (
+    TYPE_CHECKING,
     Any,
     AnyStr,
     AsyncIterable,
@@ -27,7 +28,7 @@ from typing import (
 from uuid import UUID
 
 from pydantic.tools import parse_raw_as
-from redis.asyncio import Redis, from_url
+from redis.asyncio import from_url
 from redis.exceptions import ConnectionError, TimeoutError
 from typing_extensions import TypeAlias
 
@@ -38,6 +39,9 @@ from mognet.exceptions.result_exceptions import ResultValueLost
 from mognet.model.result import Result, ResultValueHolder
 from mognet.model.result_state import READY_STATES, ResultState
 from mognet.tools.urls import censor_credentials
+
+if TYPE_CHECKING:
+    from redis.asyncio import Redis  # noqa: F401
 
 _log = logging.getLogger(__name__)
 

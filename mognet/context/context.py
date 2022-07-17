@@ -9,9 +9,6 @@ from typing import (
     Any,
     Awaitable,
     Callable,
-    Coroutine,
-    Dict,
-    Generic,
     List,
     Optional,
     Set,
@@ -40,7 +37,6 @@ _Return = TypeVar("_Return")
 
 if TYPE_CHECKING:
     from mognet.app.app import App
-    from mognet.model.result import Result
     from mognet.state.state import State
     from mognet.worker.worker import Worker
 

@@ -23,11 +23,14 @@ lint-black:
 lint-pylint:
 	@poetry run pylint mognet
 
+lint-flake8:
+	@poetry run flake8
+
 lint-mypy:
 	@poetry run mypy mognet
 
 .PHONY: lint
-lint: lint-isort lint-black lint-pylint lint-mypy
+lint: lint-isort lint-black lint-flake8 lint-pylint lint-mypy
 
 .PHONY: docker-up
 docker-up:

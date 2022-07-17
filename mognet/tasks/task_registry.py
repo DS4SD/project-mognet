@@ -1,6 +1,6 @@
 import logging
 from contextvars import ContextVar
-from typing import Any, Callable, Dict, List, Optional, Protocol
+from typing import Any, Dict, List, Optional, Protocol
 
 from mognet.context.context import Context
 

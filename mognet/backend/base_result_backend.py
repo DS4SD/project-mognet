@@ -3,17 +3,7 @@ from __future__ import annotations
 import asyncio
 from abc import ABCMeta, abstractmethod
 from datetime import timedelta
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AsyncGenerator,
-    AsyncIterable,
-    Dict,
-    List,
-    Optional,
-    Protocol,
-    Union,
-)
+from typing import Any, AsyncIterable, Dict, List, Optional, Protocol
 from uuid import UUID
 
 from mognet.backend.backend_config import ResultBackendConfig

@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 async def test_broker_stats(test_app: "App"):
     stats = await test_app.broker.task_queue_stats("tasks")
 
+    assert stats is not None
+
 
 @pytest.mark.asyncio
 async def test_broker_stats_fails_when_queue_not_found(test_app: "App"):
@@ -21,3 +23,5 @@ async def test_broker_stats_fails_when_queue_not_found(test_app: "App"):
 
     # But subsequent calls should still work...
     stats = await test_app.broker.task_queue_stats("tasks")
+
+    assert stats is not None

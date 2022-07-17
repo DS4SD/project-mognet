@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, Optional, Set
 from uuid import UUID
 
 from mognet.backend.backend_config import ResultBackendConfig

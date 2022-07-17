@@ -1,5 +1,3 @@
-import logging
-
 import typer
 
 from mognet.cli.cli_state import state
@@ -10,7 +8,9 @@ group = typer.Typer()
 
 @group.command("purge")
 @run_in_loop
-async def purge(force: bool = typer.Option(False)) -> None:
+async def purge(
+    force: bool = typer.Option(False),  # noqa: B008
+) -> None:
     """Purge task and control queues"""
 
     if not force:

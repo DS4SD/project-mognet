@@ -16,12 +16,12 @@ group = typer.Typer()
 
 @group.callback()
 def run(
-    include_queues: Optional[str] = typer.Option(
+    include_queues: Optional[str] = typer.Option(  # noqa: B008
         None,
         metavar="include-queues",
         help="Comma-separated list of the ONLY queues to listen on.",
     ),
-    exclude_queues: Optional[str] = typer.Option(
+    exclude_queues: Optional[str] = typer.Option(  # noqa: B008
         None,
         metavar="exclude-queues",
         help="Comma-separated list of the ONLY queues to NOT listen on.",

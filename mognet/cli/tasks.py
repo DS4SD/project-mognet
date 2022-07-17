@@ -22,12 +22,12 @@ group = typer.Typer()
 @group.command("get")
 @run_in_loop
 async def get(
-    task_id: UUID = typer.Argument(
+    task_id: UUID = typer.Argument(  # noqa: B008
         ...,
         metavar="id",
         help="Task ID to get",
     ),
-    include_value: bool = typer.Option(
+    include_value: bool = typer.Option(  # noqa: B008
         False,
         metavar="include-value",
         help="If passed, the task's result (or exception) will be printed",
@@ -78,12 +78,12 @@ async def get(
 @group.command("revoke")
 @run_in_loop
 async def revoke(
-    task_id: UUID = typer.Argument(
+    task_id: UUID = typer.Argument(  # noqa: B008
         ...,
         metavar="id",
         help="Task ID to revoke",
     ),
-    force: bool = typer.Option(
+    force: bool = typer.Option(  # noqa: B008
         False,
         metavar="force",
         help="Attempt revoking anyway if the result is complete. Helps cleaning up cases where subtasks may have been spawned.",
@@ -109,21 +109,23 @@ async def revoke(
 @group.command("tree")
 @run_in_loop
 async def tree(
-    task_id: UUID = typer.Argument(
+    task_id: UUID = typer.Argument(  # noqa: B008
         ...,
         metavar="id",
         help="Task ID to get tree from",
     ),
-    format: OutputFormat = typer.Option(OutputFormat.TEXT, metavar="format"),
-    json_indent: int = typer.Option(2, metavar="json-indent"),
-    text_label_format: str = typer.Option(
+    format: OutputFormat = typer.Option(  # noqa: B008
+        OutputFormat.TEXT, metavar="format"
+    ),  # noqa: B008
+    json_indent: int = typer.Option(2, metavar="json-indent"),  # noqa: B008
+    text_label_format: str = typer.Option(  # noqa: B008
         "{name}(id={id!r}, state={state!r})",
         metavar="text-label-format",
         help="Label format for text format",
     ),
-    max_depth: int = typer.Option(3, metavar="max-depth"),
-    max_width: int = typer.Option(16, metavar="max-width"),
-    poll: Optional[int] = typer.Option(None, metavar="poll"),
+    max_depth: int = typer.Option(3, metavar="max-depth"),  # noqa: B008
+    max_width: int = typer.Option(16, metavar="max-width"),  # noqa: B008
+    poll: Optional[int] = typer.Option(None, metavar="poll"),  # noqa: B008
 ) -> None:
     """Get the tree (descendants) of a task"""
 
@@ -144,19 +146,7 @@ async def tree(
             if format == "text":
                 t = treelib.Tree()
 
-                def build_tree(
-                    n: ResultTree, parent: Optional[ResultTree] = None
-                ) -> None:
-                    t.create_node(
-                        tag=text_label_format.format(**n.dict()),
-                        identifier=n.result.id,
-                        parent=None if parent is None else parent.result.id,
-                    )
-
-                    for c in n.children:
-                        build_tree(c, parent=n)
-
-                build_tree(tree)
+                _build_tree(t, text_label_format, tree)
 
                 t.show()
 
@@ -167,3 +157,19 @@ async def tree(
                 break
 
             await asyncio.sleep(poll)
+
+
+def _build_tree(
+    t: treelib.Tree,
+    text_label_format: str,
+    n: ResultTree,
+    parent: Optional[ResultTree] = None,
+) -> None:
+    t.create_node(
+        tag=text_label_format.format(**n.dict()),
+        identifier=n.result.id,
+        parent=None if parent is None else parent.result.id,
+    )
+
+    for c in n.children:
+        _build_tree(t, text_label_format, c, parent=n)
