@@ -14,14 +14,19 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+    # strategy:
+    #   matrix:
+    #     python-version: ["3.8", "3.9", "3.10"]
     steps:
       - uses: actions/checkout@v3
+
+      - name: Run docker-compose stack for testing
+        run: make docker-up
+
       - uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          # python-version: ${{ matrix.python-version }}
+          python-version: "^3.8"
           cache: "pip"
           cache-dependency-path: "poetry.lock"
 
@@ -33,9 +38,6 @@ jobs:
 
       - name: Lint
         run: make lint
-
-      - name: Run docker-compose stack for testing
-        run: make docker-up
 
       - name: Test
         # Wait for RabbitMQ to start.
