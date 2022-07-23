@@ -1,8 +1,10 @@
 import os
+
+import pytest
+
+from mognet import App, Context, Request, task
 from mognet.exceptions.too_many_retries import TooManyRetries
 from mognet.model.result_state import ResultState
-import pytest
-from mognet import App, Request, task, Context
 
 
 @pytest.mark.asyncio

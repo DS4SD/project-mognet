@@ -1,10 +1,12 @@
 from dataclasses import dataclass
+
+import pytest
 from pydantic.main import BaseModel
+
+from mognet import App, Context, Request, task
 from mognet.exceptions.task_exceptions import InvalidTaskArguments
 from mognet.model.result_state import ResultState
 from mognet.tasks.task_registry import UnknownTask
-import pytest
-from mognet import App, Request, task, Context
 
 
 @pytest.mark.asyncio

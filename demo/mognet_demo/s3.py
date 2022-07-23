@@ -5,10 +5,8 @@ Simple communication to an S3 backend.
 from contextlib import asynccontextmanager
 
 from aiobotocore.session import get_session
-
-from mognet_demo.config import DemoConfig
-
 from botocore.exceptions import ClientError
+from mognet_demo.config import DemoConfig
 
 
 @asynccontextmanager

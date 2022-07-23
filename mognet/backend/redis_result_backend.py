@@ -5,13 +5,31 @@ import functools
 import gzip
 import json
 import logging
+import sys
 from asyncio import shield
 from datetime import timedelta
-from typing import Any, AnyStr, Dict, Iterable, List, Optional, Set
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    AnyStr,
+    AsyncIterable,
+    Awaitable,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 from uuid import UUID
 
 from pydantic.tools import parse_raw_as
-from redis.asyncio import Redis, from_url
+from redis.asyncio import from_url
 from redis.exceptions import ConnectionError, TimeoutError
 
 from mognet.backend.backend_config import Encoding, ResultBackendConfig
@@ -22,15 +40,29 @@ from mognet.model.result import Result, ResultValueHolder
 from mognet.model.result_state import READY_STATES, ResultState
 from mognet.tools.urls import censor_credentials
 
+if sys.version_info < (3, 10):
+    from typing_extensions import TypeAlias
+else:
+    from typing import TypeAlias
+
+if TYPE_CHECKING:
+    from redis.asyncio import Redis  # noqa: F401
+
 _log = logging.getLogger(__name__)
 
 
-def _retry(func):
+_EncodedHSetPayload = Mapping[Union[str, bytes], Union[bytes, float, int, str]]
+
+_F = TypeVar("_F", bound=Callable[..., Awaitable[Any]])
+_Redis: TypeAlias = "Redis[Any]"
+
+
+def _retry(func: _F) -> _F:
     @functools.wraps(func)
-    async def retry_wrapper(self: RedisResultBackend, *args, **kwargs):
+    async def retry_wrapper(self: RedisResultBackend, *args: Any, **kwargs: Any) -> Any:
         last_err = None
 
-        sleep_s = 1
+        sleep_s = 1.0
 
         for attempt in range(self._retry_connect_attempts):
             try:
@@ -60,7 +92,7 @@ def _retry(func):
         if last_err is not None:
             raise last_err
 
-    return retry_wrapper
+    return cast(_F, retry_wrapper)
 
 
 class RedisResultBackend(BaseResultBackend):
@@ -72,11 +104,11 @@ class RedisResultBackend(BaseResultBackend):
         super().__init__(config, app)
 
         self._url = config.redis.url
-        self.__redis = None
+        self.__redis: Optional[_Redis] = None
         self._connected = False
 
         # Holds references to tasks which are spawned by .wait()
-        self._waiters: List[asyncio.Future] = []
+        self._waiters: List["asyncio.Future[Any]"] = []
 
         # Attributes for @_retry
         self._retry_connect_attempts = self.config.redis.retry_connect_attempts
@@ -84,21 +116,21 @@ class RedisResultBackend(BaseResultBackend):
         self._retry_lock = asyncio.Lock()
 
     @property
-    def _redis(self) -> Redis:
+    def _redis(self) -> _Redis:
         if self.__redis is None:
             raise NotConnected
 
         return self.__redis
 
     @_retry
-    async def get(self, result_id: UUID) -> Optional[Result]:
+    async def get(self, result_id: UUID) -> Optional[Result[Any]]:
         obj_key = self._format_key(result_id)
 
         async with self._redis.pipeline(transaction=True) as pip:
             # Since HGETALL returns an empty HASH for keys that don't exist,
             # test if it exists at all and use that to check if we should return null.
-            pip.exists(obj_key)
-            pip.hgetall(obj_key)
+            _ = pip.exists(obj_key)
+            _ = pip.hgetall(obj_key)
 
             exists, value, *_ = await shield(pip.execute())
 
@@ -108,7 +140,7 @@ class RedisResultBackend(BaseResultBackend):
         return self._decode_result(value)
 
     @_retry
-    async def get_or_create(self, result_id: UUID) -> Result:
+    async def get_or_create(self, result_id: UUID) -> Result[Any]:
         """
         Gets a result, or creates one if it doesn't exist.
         """
@@ -116,11 +148,11 @@ class RedisResultBackend(BaseResultBackend):
 
             result_key = self._format_key(result_id)
 
-            pip.hsetnx(result_key, "id", json.dumps(str(result_id)).encode())
-            pip.hgetall(result_key)
+            _ = pip.hsetnx(result_key, "id", json.dumps(str(result_id)).encode())
+            _ = pip.hgetall(result_key)
 
             if self.config.redis.result_ttl is not None:
-                pip.expire(result_key, self.config.redis.result_ttl)
+                _ = pip.expire(result_key, self.config.redis.result_ttl)
 
             # Also set the value, to a default holding an absence of result.
             value_key = self._format_key(result_id, "value")
@@ -129,10 +161,10 @@ class RedisResultBackend(BaseResultBackend):
             encoded = self._encode_result_value(default_not_ready)
 
             if self.config.redis.result_value_ttl is not None:
-                pip.expire(value_key, self.config.redis.result_value_ttl)
+                _ = pip.expire(value_key, self.config.redis.result_value_ttl)
 
             for encoded_k, encoded_v in encoded.items():
-                pip.hsetnx(value_key, encoded_k, encoded_v)
+                _ = pip.hsetnx(value_key, encoded_k, encoded_v)
 
             existed, value, *_ = await shield(pip.execute())
 
@@ -141,7 +173,7 @@ class RedisResultBackend(BaseResultBackend):
 
         return self._decode_result(value)
 
-    def _encode_result_value(self, value: ResultValueHolder) -> Dict[str, bytes]:
+    def _encode_result_value(self, value: ResultValueHolder) -> _EncodedHSetPayload:
         contents = value.json().encode()
         encoding = b"null"
 
@@ -167,21 +199,21 @@ class RedisResultBackend(BaseResultBackend):
         return ResultValueHolder.parse_raw(contents, content_type="application/json")
 
     @_retry
-    async def set(self, result_id: UUID, result: Result):
+    async def set(self, result_id: UUID, result: Result[Any]) -> Any:
         key = self._format_key(result_id)
 
         async with self._redis.pipeline(transaction=True) as pip:
 
             encoded = _encode_result(result)
 
-            pip.hset(key, None, None, encoded)
+            _ = pip.hset(key, None, None, encoded)
 
             if self.config.redis.result_ttl is not None:
-                pip.expire(key, self.config.redis.result_ttl)
+                _ = pip.expire(key, self.config.redis.result_ttl)
 
             await shield(pip.execute())
 
-    def _format_key(self, result_id: UUID, subkey: str = None) -> str:
+    def _format_key(self, result_id: UUID, subkey: Optional[str] = None) -> str:
         key = f"{self.app.name}.mognet.result.{str(result_id)}"
 
         if subkey:
@@ -194,7 +226,7 @@ class RedisResultBackend(BaseResultBackend):
         return key
 
     @_retry
-    async def add_children(self, result_id: UUID, *children: UUID):
+    async def add_children(self, result_id: UUID, *children: UUID) -> None:
         if not children:
             return
 
@@ -204,10 +236,10 @@ class RedisResultBackend(BaseResultBackend):
 
         async with self._redis.pipeline(transaction=True) as pip:
 
-            pip.sadd(children_key, *_encode_children(children))
+            _ = pip.sadd(children_key, *_encode_children(children))
 
             if self.config.redis.result_ttl is not None:
-                pip.expire(children_key, self.config.redis.result_ttl)
+                _ = pip.expire(children_key, self.config.redis.result_ttl)
 
             await shield(pip.execute())
 
@@ -216,31 +248,31 @@ class RedisResultBackend(BaseResultBackend):
 
         async with self._redis.pipeline(transaction=True) as pip:
 
-            pip.exists(value_key)
-            pip.hgetall(value_key)
+            _ = pip.exists(value_key)
+            _ = pip.hgetall(value_key)
 
             exists, contents = await shield(pip.execute())
 
-            if not exists:
-                raise ResultValueLost(result_id)
+        if not exists:
+            raise ResultValueLost(result_id)
 
-            return self._decode_result_value(contents)
+        return self._decode_result_value(contents)
 
-    async def set_value(self, result_id: UUID, value: ResultValueHolder):
+    async def set_value(self, result_id: UUID, value: ResultValueHolder) -> None:
         value_key = self._format_key(result_id, "value")
 
         encoded = self._encode_result_value(value)
 
         async with self._redis.pipeline(transaction=True) as pip:
 
-            pip.hset(value_key, None, None, encoded)
+            _ = pip.hset(value_key, None, None, encoded)
 
             if self.config.redis.result_value_ttl is not None:
-                pip.expire(value_key, self.config.redis.result_value_ttl)
+                _ = pip.expire(value_key, self.config.redis.result_value_ttl)
 
             await shield(pip.execute())
 
-    async def delete(self, result_id: UUID, include_children: bool = True):
+    async def delete(self, result_id: UUID, include_children: bool = True) -> None:
         if include_children:
             async for child_id in self.iterate_children_ids(result_id):
                 await self.delete(child_id, include_children=True)
@@ -254,7 +286,7 @@ class RedisResultBackend(BaseResultBackend):
 
     async def set_ttl(
         self, result_id: UUID, ttl: timedelta, include_children: bool = True
-    ):
+    ) -> None:
         if include_children:
             async for child_id in self.iterate_children_ids(result_id):
                 await self.set_ttl(child_id, ttl, include_children=True)
@@ -269,7 +301,7 @@ class RedisResultBackend(BaseResultBackend):
         await shield(self._redis.expire(value_key, ttl))
         await shield(self._redis.expire(metadata_key, ttl))
 
-    async def connect(self):
+    async def connect(self) -> None:
         if self._connected:
             return
 
@@ -277,7 +309,7 @@ class RedisResultBackend(BaseResultBackend):
 
         await self._connect()
 
-    async def close(self):
+    async def close(self) -> None:
         self._connected = False
 
         await self._close_waiters()
@@ -290,8 +322,8 @@ class RedisResultBackend(BaseResultBackend):
         return await shield(self._redis.scard(children_key))
 
     async def iterate_children_ids(
-        self, parent_result_id: UUID, *, count: Optional[float] = None
-    ):
+        self, parent_result_id: UUID, *, count: Optional[int] = None
+    ) -> AsyncIterable[UUID]:
         children_key = self._format_key(parent_result_id, "children")
 
         raw_child_id: bytes
@@ -300,8 +332,8 @@ class RedisResultBackend(BaseResultBackend):
             yield child_id
 
     async def iterate_children(
-        self, parent_result_id: UUID, *, count: Optional[float] = None
-    ):
+        self, parent_result_id: UUID, *, count: Optional[int] = None
+    ) -> AsyncIterable[Result[Any]]:
         async for child_id in self.iterate_children_ids(parent_result_id, count=count):
             child = await self.get(child_id)
 
@@ -311,8 +343,8 @@ class RedisResultBackend(BaseResultBackend):
     @_retry
     async def wait(
         self, result_id: UUID, timeout: Optional[float] = None, poll: float = 1
-    ) -> Result:
-        async def waiter():
+    ) -> Result[Any]:
+        async def waiter() -> Result[Any]:
             key = self._format_key(result_id=result_id)
 
             # Type def for the state key. It can (but shouldn't)
@@ -322,7 +354,7 @@ class RedisResultBackend(BaseResultBackend):
             while True:
                 raw_state = await shield(self._redis.hget(key, "state")) or b"null"
 
-                state = parse_raw_as(t, raw_state)
+                state = parse_raw_as(cast(Type[Optional[ResultState]], t), raw_state)
 
                 if state is None:
                     raise ResultValueLost(result_id)
@@ -366,25 +398,25 @@ class RedisResultBackend(BaseResultBackend):
 
         async with self._redis.pipeline(transaction=True) as pip:
 
-            pip.hset(key, None, None, _dict_to_json_dict(kwargs))
+            _ = pip.hset(key, None, None, _dict_to_json_dict(kwargs))
 
             if self.config.redis.result_ttl is not None:
-                pip.expire(key, self.config.redis.result_ttl)
+                _ = pip.expire(key, self.config.redis.result_ttl)
 
             await shield(pip.execute())
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"RedisResultBackend(url={censor_credentials(self._url)!r})"
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> RedisResultBackend:
         await self.connect()
 
         return self
 
-    async def __aexit__(self, *args, **kwargs):
+    async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         await self.close()
 
-    async def _close_waiters(self):
+    async def _close_waiters(self) -> None:
         """
         Cancel any wait loop we have running.
         """
@@ -401,9 +433,9 @@ class RedisResultBackend(BaseResultBackend):
             except Exception as exc:  # pylint: disable=broad-except
                 _log.debug("Error on waiter task %r", waiter_task, exc_info=exc)
 
-    async def _create_redis(self):
+    async def _create_redis(self) -> _Redis:
         _log.debug("Creating Redis connection")
-        redis: Redis = await from_url(
+        redis: _Redis = await from_url(
             self._url,
             max_connections=self.config.redis.max_connections,
         )
@@ -411,13 +443,13 @@ class RedisResultBackend(BaseResultBackend):
         return redis
 
     @_retry
-    async def _connect(self):
+    async def _connect(self) -> None:
         if self.__redis is None:
             self.__redis = await self._create_redis()
 
         await shield(self._redis.ping())
 
-    async def _disconnect(self):
+    async def _disconnect(self) -> None:
         redis = self.__redis
 
         if redis is not None:
@@ -425,18 +457,18 @@ class RedisResultBackend(BaseResultBackend):
             _log.debug("Closing Redis connection")
             await redis.close()
 
-    def _decode_result(self, json_dict: Dict[bytes, bytes]) -> Result:
+    def _decode_result(self, json_dict: Dict[bytes, bytes]) -> Result[Any]:
         # Load the dict of JSON values first; then update it with overrides.
         value = _decode_json_dict(json_dict)
         return Result(self, **value)
 
 
-def _encode_result(result: Result) -> Dict[str, bytes]:
-    json_dict: dict = json.loads(result.json())
+def _encode_result(result: Result[Any]) -> _EncodedHSetPayload:
+    json_dict: Dict[str, Any] = json.loads(result.json())
     return _dict_to_json_dict(json_dict)
 
 
-def _dict_to_json_dict(value: Dict[str, Any]) -> Dict[str, bytes]:
+def _dict_to_json_dict(value: Dict[str, Any]) -> _EncodedHSetPayload:
     return {k: json.dumps(v).encode() for k, v in value.items()}
 
 
@@ -446,7 +478,7 @@ def _encode_children(children: Iterable[UUID]) -> Set[bytes]:
     return {c.bytes for c in children}
 
 
-def _decode_json_dict(json_dict: Dict[bytes, AnyStr]) -> dict:
+def _decode_json_dict(json_dict: Dict[bytes, AnyStr]) -> Dict[str, Any]:
     """
     Decode a dict coming from hgetall/hmget, which is encoded with bytes as keys
     and bytes or str as values, containing JSON values.

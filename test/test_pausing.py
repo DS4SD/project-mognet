@@ -1,8 +1,10 @@
-import pytest
 from typing import List
-from mognet.primitives.request import Request
+
+import pytest
+
 from mognet import App, Context, task
 from mognet.exceptions.task_exceptions import Pause
+from mognet.primitives.request import Request
 
 
 @task(name="test.paused_sum")

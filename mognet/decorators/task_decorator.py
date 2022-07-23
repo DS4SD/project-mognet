@@ -1,14 +1,15 @@
 import logging
 from typing import Any, Callable, Optional, TypeVar, cast
+
 from mognet.tasks.task_registry import TaskRegistry, task_registry
 
 _log = logging.getLogger(__name__)
 
 
-_T = TypeVar("_T")
+_T = TypeVar("_T", bound=Callable[..., Any])
 
 
-def task(*, name: Optional[str] = None):
+def task(*, name: Optional[str] = None) -> Callable[[_T], _T]:
     """
     Register a function as a task that can be run.
 
@@ -29,7 +30,7 @@ def task(*, name: Optional[str] = None):
             reg = TaskRegistry()
             reg.register_globally()
 
-        reg.add_task_function(cast(Callable, t), name=name)
+        reg.add_task_function(cast(Callable[..., Any], t), name=name)
 
         return t
 

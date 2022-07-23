@@ -1,0 +1,4 @@
+[flake8]
+ignore = E501,W503
+exclude = .git,__pycache__,docs/,build,dist,demo
+# max-complexity = 10

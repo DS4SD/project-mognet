@@ -2,11 +2,12 @@ import os
 import socket
 from typing import Any, Dict, List, Optional, Set
 
+from pydantic.fields import Field
+from pydantic.main import BaseModel
+
 from mognet.backend.backend_config import ResultBackendConfig
 from mognet.broker.broker_config import BrokerConfig
 from mognet.state.state_backend_config import StateBackendConfig
-from pydantic.fields import Field
-from pydantic.main import BaseModel
 
 
 def _default_node_id() -> str:
@@ -18,10 +19,10 @@ class Queues(BaseModel):
     exclude: Set[str] = Field(default_factory=set)
 
     @property
-    def is_valid(self):
+    def is_valid(self) -> bool:
         return not (len(self.include) > 0 and len(self.exclude) > 0)
 
-    def ensure_valid(self):
+    def ensure_valid(self) -> None:
         if not self.is_valid:
             raise ValueError(
                 "Cannot specify both 'include' and 'exclude'. Choose either or none."

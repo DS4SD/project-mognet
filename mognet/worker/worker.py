@@ -1,32 +1,27 @@
-from datetime import datetime, timedelta
-from enum import Enum
-import inspect
+from __future__ import annotations
 
-from mognet.exceptions.task_exceptions import InvalidTaskArguments, Pause
 import asyncio
+import inspect
 import logging
 from asyncio.futures import Future
-from mognet.broker.base_broker import IncomingMessagePayload
-from typing import (
-    AsyncGenerator,
-    Optional,
-    Set,
-    TYPE_CHECKING,
-    Dict,
-    List,
-)
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, Optional, Set
 from uuid import UUID
 
-from mognet.tools.backports.aioitertools import as_generated
-from mognet.broker.base_broker import IncomingMessagePayload
-from mognet.context.context import Context
-from mognet.exceptions.too_many_retries import TooManyRetries
-from mognet.model.result import Result, ResultState
-from mognet.state.state import State
-from mognet.tasks.task_registry import UnknownTask
 from pydantic import ValidationError
 from pydantic.decorator import ValidatedFunction
+
+from mognet.broker.base_broker import IncomingMessagePayload
+from mognet.context.context import Context
+from mognet.exceptions.task_exceptions import InvalidTaskArguments, Pause
+from mognet.exceptions.too_many_retries import TooManyRetries
+from mognet.model.result import Result
+from mognet.model.result_state import ResultState
 from mognet.primitives.request import Request
+from mognet.state.state import State
+from mognet.tasks.task_registry import UnknownTask
+from mognet.tools.backports.aioitertools import as_generated
 
 if TYPE_CHECKING:
     from mognet.app.app import App
@@ -47,7 +42,7 @@ class Worker:
     loop, for the task queues that are configured.
     """
 
-    running_tasks: Dict[UUID, "_RequestProcessorHolder"]
+    running_tasks: Dict[UUID, _RequestProcessorHolder]
 
     # Set of tasks that are suspended
     _waiting_tasks: Set[UUID]
@@ -58,7 +53,7 @@ class Worker:
         self,
         *,
         app: "App",
-        middleware: List["Middleware"] = None,
+        middleware: Optional[List["Middleware"]] = None,
     ) -> None:
         self.app = app
         self.running_tasks = {}
@@ -67,10 +62,12 @@ class Worker:
 
         self._current_prefetch = 1
 
-        self._queue_consumption_tasks: List[AsyncGenerator] = []
-        self._consume_task = None
+        self._queue_consumption_tasks: List[
+            AsyncGenerator[IncomingMessagePayload, None]
+        ] = []
+        self._consume_task: Optional[asyncio.Task[None]] = None
 
-    async def run(self):
+    async def run(self) -> None:
         _log.debug("Starting worker")
 
         try:
@@ -83,13 +80,17 @@ class Worker:
         except Exception as exc:  # pylint: disable=broad-except
             _log.error("Error during consumption", exc_info=exc)
 
-    async def _handle_connection_lost(self, exc: BaseException = None):
+    async def _handle_connection_lost(
+        self, exc: Optional[BaseException] = None
+    ) -> None:
         _log.error("Handling connection lost event, stopping all tasks", exc_info=exc)
 
         # No point in NACKing, because we have been disconnected
         await self._cancel_all_tasks(message_action=MessageCancellationAction.NOTHING)
 
-    async def _cancel_all_tasks(self, *, message_action: MessageCancellationAction):
+    async def _cancel_all_tasks(
+        self, *, message_action: MessageCancellationAction
+    ) -> None:
         all_req_ids = list(self.running_tasks)
 
         _log.debug("Cancelling all %r running tasks", len(all_req_ids))
@@ -102,7 +103,7 @@ class Worker:
         finally:
             self._waiting_tasks.clear()
 
-    async def stop_consuming(self):
+    async def stop_consuming(self) -> None:
         _log.debug("Closing queue consumption tasks")
 
         consumers = self._queue_consumption_tasks
@@ -132,7 +133,7 @@ class Worker:
             except Exception as consume_err:  # pylint: disable=broad-except
                 _log.error("Error shutting down consumer task", exc_info=consume_err)
 
-    async def close(self):
+    async def close(self) -> None:
         """
         Stops execution, cancelling all running tasks.
         """
@@ -146,18 +147,20 @@ class Worker:
 
         _log.debug("Closed worker")
 
-    def _remove_running_task(self, req_id: UUID):
+    def _remove_running_task(self, req_id: UUID) -> Optional[_RequestProcessorHolder]:
         fut = self.running_tasks.pop(req_id, None)
 
         asyncio.create_task(self._emit_running_task_count_change())
 
         return fut
 
-    def _add_running_task(self, req_id: UUID, holder: "_RequestProcessorHolder"):
+    def _add_running_task(self, req_id: UUID, holder: _RequestProcessorHolder) -> None:
         self.running_tasks[req_id] = holder
         asyncio.create_task(self._emit_running_task_count_change())
 
-    async def cancel(self, req_id: UUID, *, message_action: MessageCancellationAction):
+    async def cancel(
+        self, req_id: UUID, *, message_action: MessageCancellationAction
+    ) -> None:
         """
         Cancels, if any, the execution of a request.
         Whoever calls this method is responsible for updating the result on the backend
@@ -197,7 +200,7 @@ class Worker:
 
         _log.debug("Stopped handler of task id=%r", req_id)
 
-    def _create_context(self, request: "Request") -> "Context":
+    def _create_context(self, request: "Request[Any]") -> "Context":
         if not self.app.state_backend:
             raise RuntimeError("No state backend defined")
 
@@ -208,7 +211,7 @@ class Worker:
             self,
         )
 
-    async def _run_request(self, req: Request) -> None:
+    async def _run_request(self, req: Request[Any]) -> None:
         """
         Processes a request, validating it before running.
         """
@@ -219,15 +222,18 @@ class Worker:
         # for cases when a request is cancelled before it's started.
         # Even worse, check that we're not trying to start a request whose
         # result might have been evicted.
-        result = await self.app.result_backend.get(req.id)
+        res = await self.app.result_backend.get(req.id)
 
-        if result is None:
+        if res is None:
             _log.error(
                 "Attempting to run task %r, but it's result doesn't exist on the backend. Discarding",
                 req,
             )
             await self.remove_suspended_task(req.id)
             return
+
+        # Shut up, mypy. 'res' cannot be None after this point.
+        result: Result[Any] = res
 
         context = self._create_context(req)
 
@@ -389,7 +395,7 @@ class Worker:
             value = await fut
 
             if req.id in self.running_tasks:
-                await asyncio.shield(result.set_result(value))
+                result = await asyncio.shield(result.set_result(value))
 
                 _log.info(
                     "Request %r finished with status %r in %.2fs",
@@ -447,7 +453,7 @@ class Worker:
                     exc_info=exc,
                 )
 
-    async def _on_complete(self, context: "Context", result: Result):
+    async def _on_complete(self, context: "Context", result: Result[Any]) -> None:
         if result.done:
             await context.state.clear()
 
@@ -462,7 +468,7 @@ class Worker:
             except Exception as mw_exc:  # pylint: disable=broad-except
                 _log.error("Middleware %r failed", middleware, exc_info=mw_exc)
 
-    async def _on_starting(self, context: "Context"):
+    async def _on_starting(self, context: "Context") -> None:
         _log.info("Starting task %r", context.request)
 
         for middleware in self._middleware:
@@ -472,7 +478,9 @@ class Worker:
             except Exception as mw_exc:  # pylint: disable=broad-except
                 _log.error("Middleware %r failed", middleware, exc_info=mw_exc)
 
-    def _process_request_message(self, payload: IncomingMessagePayload) -> asyncio.Task:
+    def _process_request_message(
+        self, payload: IncomingMessagePayload
+    ) -> asyncio.Task[None]:
         """
         Creates an asyncio.Task which will process the enclosed Request
         in the background.
@@ -480,9 +488,9 @@ class Worker:
         Returns said task, after adding completion handlers to it.
         """
         _log.debug("Parsing input of message id=%r as Request", payload.id)
-        req = Request.parse_obj(payload.payload)
+        req: Request[Any] = Request.parse_obj(payload.payload)
 
-        async def request_processor():
+        async def request_processor() -> None:
             try:
                 await self._run_request(req)
 
@@ -500,7 +508,7 @@ class Worker:
                 )
                 await asyncio.shield(payload.nack())
 
-        def on_processing_done(fut: Future):
+        def on_processing_done(fut: "Future[Any]") -> None:
             self._remove_running_task(req.id)
 
             exc = fut.exception()
@@ -519,7 +527,7 @@ class Worker:
 
         return task
 
-    def start_consuming(self):
+    def start_consuming(self) -> asyncio.Task[None]:
         if self._consume_task is not None:
             return self._consume_task
 
@@ -527,7 +535,7 @@ class Worker:
 
         return self._consume_task
 
-    async def _start_consuming(self):
+    async def _start_consuming(self) -> None:
 
         queues = self.app.get_task_queue_names()
 
@@ -560,11 +568,11 @@ class Worker:
         finally:
             _log.debug("Stopped consuming task queues")
 
-    async def add_waiting_task(self, task_id: UUID):
+    async def add_waiting_task(self, task_id: UUID) -> None:
         self._waiting_tasks.add(task_id)
         await self._adjust_prefetch()
 
-    async def remove_suspended_task(self, task_id: UUID):
+    async def remove_suspended_task(self, task_id: UUID) -> None:
         try:
             self._waiting_tasks.remove(task_id)
         except KeyError:
@@ -572,10 +580,10 @@ class Worker:
         await self._adjust_prefetch()
 
     @property
-    def waiting_task_count(self):
+    def waiting_task_count(self) -> int:
         return len(self._waiting_tasks)
 
-    async def _emit_running_task_count_change(self):
+    async def _emit_running_task_count_change(self) -> None:
         for middleware in self._middleware:
             try:
                 _log.debug("Calling 'on_running_task_count_changed' on %r", middleware)
@@ -587,7 +595,7 @@ class Worker:
                     exc_info=mw_exc,
                 )
 
-    async def _adjust_prefetch(self):
+    async def _adjust_prefetch(self) -> None:
         if self._consume_task is None:
             _log.debug("Not adjusting prefetch because not consuming the queue")
             return
@@ -644,14 +652,14 @@ class _RequestProcessorHolder:
     def __init__(
         self,
         incoming_message: IncomingMessagePayload,
-        request: Request,
-        task: asyncio.Task,
+        request: Request[Any],
+        task: asyncio.Task[Any],
     ) -> None:
         self.message = incoming_message
         self.request = request
-        self._task: Optional[asyncio.Task] = task
+        self._task: Optional[asyncio.Task[Any]] = task
 
-    async def cancel(self, *, message_action: MessageCancellationAction):
+    async def cancel(self, *, message_action: MessageCancellationAction) -> None:
 
         try:
             if message_action == MessageCancellationAction.ACK:

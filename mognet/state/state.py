@@ -1,9 +1,11 @@
-from typing import Any, TYPE_CHECKING
-from uuid import UUID
+from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
 if TYPE_CHECKING:
     from mognet import App
+    from mognet.state.base_state_backend import BaseStateBackend
 
 
 class State:
@@ -22,14 +24,14 @@ class State:
         self.request_id = request_id
 
     @property
-    def _backend(self):
+    def _backend(self) -> BaseStateBackend:
         return self._app.state_backend
 
     async def get(self, key: str, default: Any = None) -> Any:
         """Get a value."""
         return await self._backend.get(self.request_id, key, default)
 
-    async def set(self, key: str, value: Any):
+    async def set(self, key: str, value: Any) -> None:
         """Set a value."""
         return await self._backend.set(self.request_id, key, value)
 
@@ -37,6 +39,6 @@ class State:
         """Delete a value from the state and return it's value."""
         return await self._backend.pop(self.request_id, key, default)
 
-    async def clear(self):
+    async def clear(self) -> None:
         """Clear all values."""
         return await self._backend.clear(self.request_id)

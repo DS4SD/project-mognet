@@ -1,21 +1,13 @@
+from __future__ import annotations
+
 import asyncio
 from abc import ABCMeta, abstractmethod
 from datetime import timedelta
-from typing import (
-    Any,
-    AsyncGenerator,
-    Dict,
-    List,
-    Optional,
-    Protocol,
-    Union,
-)
+from typing import Any, AsyncIterable, Dict, List, Optional, Protocol
 from uuid import UUID
 
 from mognet.backend.backend_config import ResultBackendConfig
 from mognet.model.result import Result, ResultValueHolder
-
-ResultOrId = Union[UUID, "Result"]
 
 
 class AppParameters(Protocol):
@@ -35,14 +27,14 @@ class BaseResultBackend(metaclass=ABCMeta):
         self.app = app
 
     @abstractmethod
-    async def get(self, result_id: UUID) -> Optional[Result]:
+    async def get(self, result_id: UUID) -> Optional[Result[Any]]:
         """
         Get a Result by it's ID.
         If it doesn't exist, this method returns None.
         """
         raise NotImplementedError
 
-    async def get_many(self, *result_ids: UUID) -> List[Result]:
+    async def get_many(self, *result_ids: UUID) -> List[Result[Any]]:
         """
         Get a list of Results by specifying their IDs.
         Results that don't exist will be removed from this list.
@@ -51,7 +43,7 @@ class BaseResultBackend(metaclass=ABCMeta):
 
         return [r for r in all_results if r if r is not None]
 
-    async def get_or_create(self, result_id: UUID) -> Result:
+    async def get_or_create(self, result_id: UUID) -> Result[Any]:
         """
         Get a Result by it's ID.
         If it doesn't exist, this method creates one.
@@ -68,7 +60,7 @@ class BaseResultBackend(metaclass=ABCMeta):
         return res
 
     @abstractmethod
-    async def set(self, result_id: UUID, result: Result) -> None:
+    async def set(self, result_id: UUID, result: Result[Any]) -> None:
         """
         Save a Result.
         """
@@ -76,14 +68,14 @@ class BaseResultBackend(metaclass=ABCMeta):
 
     async def wait(
         self, result_id: UUID, timeout: Optional[float] = None, poll: float = 0.1
-    ) -> Result:
+    ) -> Result[Any]:
         """
         Wait until a result is ready.
 
         Raises `asyncio.TimeoutError` if a timeout is set and exceeded.
         """
 
-        async def waiter():
+        async def waiter() -> Result[Any]:
             while True:
                 result = await self.get(result_id)
 
@@ -109,7 +101,7 @@ class BaseResultBackend(metaclass=ABCMeta):
     @abstractmethod
     def iterate_children_ids(
         self, parent_result_id: UUID, *, count: Optional[int] = None
-    ) -> AsyncGenerator[UUID, None]:
+    ) -> AsyncIterable[UUID]:
         """
         Get an AsyncGenerator for the IDs for the children of a Result.
 
@@ -119,7 +111,7 @@ class BaseResultBackend(metaclass=ABCMeta):
 
     def iterate_children(
         self, parent_result_id: UUID, *, count: Optional[int] = None
-    ) -> AsyncGenerator[Result, None]:
+    ) -> AsyncIterable[Result[Any]]:
         """
         Get an AsyncGenerator for the children of a Result.
 
@@ -127,19 +119,19 @@ class BaseResultBackend(metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    async def __aenter__(self):
+    async def __aenter__(self):  # type: ignore
         return self
 
-    async def __aexit__(self, *args, **kwargs):
+    async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         return None
 
-    async def connect(self):
+    async def connect(self) -> None:
         """
         Explicit method to connect to the backend provided by
         this Result backend.
         """
 
-    async def close(self):
+    async def close(self) -> None:
         """
         Explicit method to close the backend provided by
         this Result backend.

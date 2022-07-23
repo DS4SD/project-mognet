@@ -1,8 +1,10 @@
-from asyncio import Queue
 import asyncio
+from asyncio import Queue
+from typing import Any, AsyncGenerator, Dict
 from uuid import uuid4
 
 from pydantic.fields import PrivateAttr
+
 from mognet.broker.base_broker import (
     BaseBroker,
     IncomingMessagePayload,
@@ -11,15 +13,16 @@ from mognet.broker.base_broker import (
 )
 from mognet.model.queue_stats import QueueStats
 from mognet.primitives.queries import QueryResponseMessage
-from typing import AsyncGenerator, Dict
 
 
 class _InMemoryIncomingMessagePayload(IncomingMessagePayload):
 
     _broker: "InMemoryBroker" = PrivateAttr()
-    _queue: Queue = PrivateAttr()
+    _queue: "Queue[MessagePayload]" = PrivateAttr()
 
-    def __init__(self, broker: "InMemoryBroker", queue: Queue, **data):
+    def __init__(
+        self, broker: "InMemoryBroker", queue: "Queue[MessagePayload]", **data: Any
+    ) -> None:
         super().__init__(**data)
 
         self._broker = broker
@@ -49,10 +52,10 @@ class InMemoryBroker(BaseBroker):
 
         self._callback_queues: Dict[str, "Queue[MessagePayload]"] = {}
 
-    async def send_task_message(self, queue: str, payload: MessagePayload):
+    async def send_task_message(self, queue: str, payload: MessagePayload) -> None:
         await self._task_queues[queue].put(payload)
 
-    async def send_control_message(self, payload: MessagePayload):
+    async def send_control_message(self, payload: MessagePayload) -> None:
         await self._control_queue.put(payload)
 
     async def consume_tasks(
@@ -91,27 +94,27 @@ class InMemoryBroker(BaseBroker):
                 reply_to=None,
             )
 
-    async def setup_task_queue(self, queue: TaskQueue):
+    async def setup_task_queue(self, queue: TaskQueue) -> None:
         self._task_queues[queue.name] = Queue()
 
-    async def setup_control_queue(self):
+    async def setup_control_queue(self) -> None:
         pass
 
-    def _update_task_event(self):
+    def _update_task_event(self) -> None:
         if self._unacked_task_count < self._task_prefetch:
             self._task_event.set()
         else:
             self._task_event.clear()
 
-    async def ack_task(self):
+    async def ack_task(self) -> None:
         self._unacked_task_count = max(0, self._unacked_task_count - 1)
         self._update_task_event()
 
-    async def set_task_prefetch(self, prefetch: int):
+    async def set_task_prefetch(self, prefetch: int) -> None:
         self._task_prefetch = prefetch
         self._update_task_event()
 
-    async def set_control_prefetch(self, prefetch: int):
+    async def set_control_prefetch(self, prefetch: int) -> None:
         self._control_prefetch = prefetch
 
     async def send_query_message(
@@ -139,7 +142,9 @@ class InMemoryBroker(BaseBroker):
         finally:
             self._callback_queues.pop(queue_id, None)
 
-    async def send_reply(self, message: IncomingMessagePayload, reply: MessagePayload):
+    async def send_reply(
+        self, message: IncomingMessagePayload, reply: MessagePayload
+    ) -> None:
         if not message.reply_to:
             raise ValueError("No one to send reply to")
 
@@ -167,7 +172,7 @@ class InMemoryBroker(BaseBroker):
         )
 
 
-def _purge_queue(q: Queue) -> int:
+def _purge_queue(q: Queue[Any]) -> int:
     old_size = q.qsize()
 
     while not q.empty():

@@ -9,12 +9,12 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from mognet import App, Request
 from mognet_demo.config import DemoConfig
 from mognet_demo.models import Upload, UploadResult
 from mognet_demo.s3 import get_s3_client
 from mognet_demo.tasks import InvalidFile
 
+from mognet import App, Request
 
 _cwd = Path(__file__).parent
 

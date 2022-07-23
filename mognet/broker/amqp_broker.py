@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import json
 import logging
@@ -7,8 +9,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     AsyncGenerator,
-    Awaitable,
     Callable,
+    Coroutine,
     Dict,
     List,
     Optional,
@@ -23,6 +25,8 @@ from aio_pika.exchange import Exchange, ExchangeType
 from aio_pika.message import IncomingMessage, Message
 from aio_pika.queue import Queue
 from aiormq.exceptions import AMQPChannelError, ChannelInvalidStateError
+from pydantic.fields import PrivateAttr
+
 from mognet.broker.base_broker import (
     BaseBroker,
     IncomingMessagePayload,
@@ -36,7 +40,6 @@ from mognet.model.queue_stats import QueueStats
 from mognet.primitives.queries import QueryResponseMessage
 from mognet.tools.retries import retryableasyncmethod
 from mognet.tools.urls import censor_credentials
-from pydantic.fields import PrivateAttr
 
 _log = logging.getLogger(__name__)
 
@@ -58,7 +61,7 @@ class _AmqpIncomingMessagePayload(IncomingMessagePayload):
         self._incoming_message = incoming_message
         self._processed = False
 
-    async def ack(self):
+    async def ack(self) -> bool:
         if self._processed:
             return True
 
@@ -76,7 +79,7 @@ class _AmqpIncomingMessagePayload(IncomingMessagePayload):
             _log.error("Could not ACK message %r", self.id, exc_info=exc)
             return False
 
-    async def nack(self):
+    async def nack(self) -> bool:
         if self._processed:
             return True
 
@@ -124,12 +127,12 @@ class AmqpBroker(BaseBroker):
         super().__init__()
 
         self._connected = False
-        self.__connection = None
+        self.__connection: Optional[aio_pika.RobustConnection] = None
 
         self.config = config
 
         self._task_queues = {}
-        self._control_queue = None
+        self._control_queue: Optional[Queue] = None
 
         # Lock to prevent duplicate queue declaration
         self._lock = Lock()
@@ -142,7 +145,7 @@ class AmqpBroker(BaseBroker):
 
         # List of callbacks for when connection drops
         self._on_connection_failed_callbacks: List[
-            Callable[[Optional[BaseException]], Awaitable]
+            Callable[[Optional[BaseException]], Coroutine[Any, Any, Any]]
         ] = []
 
     @property
@@ -152,18 +155,18 @@ class AmqpBroker(BaseBroker):
 
         return self.__connection
 
-    async def ack(self, delivery_tag: str):
+    async def ack(self, delivery_tag: str) -> None:
         await self._task_channel.channel.basic_ack(delivery_tag)
 
-    async def nack(self, delivery_tag: str):
+    async def nack(self, delivery_tag: str) -> None:
         await self._task_channel.channel.basic_nack(delivery_tag)
 
     @_retry
-    async def set_task_prefetch(self, prefetch: int):
+    async def set_task_prefetch(self, prefetch: int) -> None:
         await self._task_channel.set_qos(prefetch_count=prefetch, global_=True)
 
     @_retry
-    async def send_task_message(self, queue: str, payload: MessagePayload):
+    async def send_task_message(self, queue: str, payload: MessagePayload) -> None:
         amqp_queue = self._task_queue_name(queue)
 
         msg = Message(
@@ -199,7 +202,7 @@ class AmqpBroker(BaseBroker):
             yield message
 
     @_retry
-    async def send_control_message(self, payload: MessagePayload):
+    async def send_control_message(self, payload: MessagePayload) -> None:
         msg = Message(
             body=payload.json().encode(),
             content_type="application/json",
@@ -212,7 +215,7 @@ class AmqpBroker(BaseBroker):
         await self._control_exchange.publish(msg, "")
 
     @_retry
-    async def _send_query_message(self, payload: MessagePayload):
+    async def _send_query_message(self, payload: MessagePayload) -> Queue:
         callback_queue = await self._task_channel.declare_queue(
             name=self._callback_queue_name,
             durable=False,
@@ -253,7 +256,7 @@ class AmqpBroker(BaseBroker):
             async with callback_queue.iterator() as iterator:
                 async for message in iterator:
                     async with message.process():
-                        contents: dict = json.loads(message.body)
+                        contents: Dict[str, Any] = json.loads(message.body)
                         msg = _AmqpIncomingMessagePayload(
                             broker=self, incoming_message=message, **contents
                         )
@@ -262,15 +265,15 @@ class AmqpBroker(BaseBroker):
             if callback_queue is not None:
                 await callback_queue.delete()
 
-    async def setup_control_queue(self):
+    async def setup_control_queue(self) -> None:
         await self._get_or_create_control_queue()
 
-    async def setup_task_queue(self, queue: TaskQueue):
+    async def setup_task_queue(self, queue: TaskQueue) -> None:
         await self._get_or_create_task_queue(queue)
 
     @_retry
-    async def _create_connection(self):
-        connection = await aio_pika.connect_robust(
+    async def _create_connection(self) -> aio_pika.RobustConnection:
+        connection: aio_pika.RobustConnection = await aio_pika.connect_robust(
             self.config.amqp.url,
             reconnect_interval=self.app.config.reconnect_interval,
             client_properties={
@@ -284,11 +287,13 @@ class AmqpBroker(BaseBroker):
         return connection
 
     def add_connection_failed_callback(
-        self, cb: Callable[[Optional[BaseException]], Awaitable]
-    ):
+        self, cb: Callable[[Optional[BaseException]], Coroutine[Any, Any, Any]]
+    ) -> None:
         self._on_connection_failed_callbacks.append(cb)
 
-    def _send_connection_failed_events(self, connection, exc=None):
+    def _send_connection_failed_events(
+        self, connection: aio_pika.RobustConnection, exc: Optional[BaseException] = None
+    ) -> None:
         if not self._connected:
             _log.debug(
                 "Not sending connection closed events because we are disconnected"
@@ -304,7 +309,7 @@ class AmqpBroker(BaseBroker):
             len(tasks),
         )
 
-        def notify_task_completion_callback(fut: asyncio.Future):
+        def notify_task_completion_callback(fut: "asyncio.Future[Any]") -> None:
             exc = fut.exception()
 
             if exc and not fut.cancelled():
@@ -314,7 +319,7 @@ class AmqpBroker(BaseBroker):
             notify_task = asyncio.create_task(task)
             notify_task.add_done_callback(notify_task_completion_callback)
 
-    async def connect(self):
+    async def connect(self) -> None:
         if self._connected:
             return
 
@@ -337,10 +342,10 @@ class AmqpBroker(BaseBroker):
 
         _log.debug("Connected")
 
-    async def set_control_prefetch(self, prefetch: int):
+    async def set_control_prefetch(self, prefetch: int) -> None:
         await self._control_channel.set_qos(prefetch_count=prefetch, global_=False)
 
-    async def close(self):
+    async def close(self) -> None:
         self._connected = False
 
         connection = self.__connection
@@ -349,11 +354,13 @@ class AmqpBroker(BaseBroker):
             self.__connection = None
 
             _log.debug("Closing connections")
-            await connection.close()
+            await connection.close()  # type: ignore
             _log.debug("Connection closed")
 
     @_retry
-    async def send_reply(self, message: IncomingMessagePayload, reply: MessagePayload):
+    async def send_reply(
+        self, message: IncomingMessagePayload, reply: MessagePayload
+    ) -> None:
         if not message.reply_to:
             raise ValueError("Message has no reply_to set")
 
@@ -395,22 +402,22 @@ class AmqpBroker(BaseBroker):
 
         result = await self._control_queue.purge()
 
-        return result.message_count
+        return result.message_count  # type: ignore
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"AmqpBroker(url={censor_credentials(self.config.amqp.url)!r})"
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> AmqpBroker:
         await self.connect()
 
         return self
 
-    async def __aexit__(self, *args, **kwargs):
+    async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         await self.close()
 
         return None
 
-    async def _create_exchanges(self):
+    async def _create_exchanges(self) -> None:
         self._direct_exchange = await self._task_channel.declare_exchange(
             self._direct_exchange_name,
             type=ExchangeType.DIRECT,
@@ -430,7 +437,7 @@ class AmqpBroker(BaseBroker):
             async for msg in queue_iterator:
 
                 try:
-                    contents: dict = json.loads(msg.body)
+                    contents: Dict[str, Any] = json.loads(msg.body)
 
                     payload = _AmqpIncomingMessagePayload(
                         broker=self, incoming_message=msg, **contents
@@ -493,6 +500,8 @@ class AmqpBroker(BaseBroker):
                     await self._control_queue.bind(self._control_exchange)
 
                     _log.debug("Prepared control queue=%r", self._control_queue.name)
+
+        assert self._control_queue is not None
 
         return self._control_queue
 

@@ -1,16 +1,17 @@
 import asyncio
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import tabulate
 import typer
+from pydantic import BaseModel, Field
+
 from mognet.cli.cli_state import state
 from mognet.cli.models import OutputFormat
 from mognet.cli.run_in_loop import run_in_loop
 from mognet.model.result import Result
 from mognet.primitives.queries import StatusResponseMessage
 from mognet.tools.dates import now_utc
-from pydantic import BaseModel, Field
 
 group = typer.Typer()
 
@@ -18,35 +19,38 @@ group = typer.Typer()
 @group.command("status")
 @run_in_loop
 async def status(
-    format: OutputFormat = typer.Option(OutputFormat.TEXT, metavar="format"),
-    text_label_format: str = typer.Option(
+    format: OutputFormat = typer.Option(  # noqa: B008
+        OutputFormat.TEXT, metavar="format"
+    ),  # noqa: B008
+    text_label_format: str = typer.Option(  # noqa: B008
         "{name}(id={id!r}, state={state!r})",
         metavar="text-label-format",
         help="Label format for text format",
     ),
-    json_indent: int = typer.Option(2, metavar="json-indent"),
-    poll: Optional[int] = typer.Option(
+    json_indent: int = typer.Option(2, metavar="json-indent"),  # noqa: B008
+    poll: Optional[int] = typer.Option(  # noqa: B008
         None,
         metavar="poll",
         help="Polling interval, in seconds (default=None)",
     ),
-    timeout: int = typer.Option(
+    timeout: int = typer.Option(  # noqa: B008
         30,
         help="Timeout for querying nodes",
     ),
-):
+) -> None:
     """Query each node for their status"""
 
     async with state["app_instance"] as app:
         while True:
             each_node_status: List[StatusResponseMessage] = []
 
-            async def read_status():
-                async for node_status in app.get_current_status_of_nodes():
-                    each_node_status.append(node_status)
+            async def read_status() -> List[StatusResponseMessage]:
+                return [ns async for ns in app.get_current_status_of_nodes()]
 
             try:
-                await asyncio.wait_for(read_status(), timeout=timeout)
+                each_node_status.extend(
+                    await asyncio.wait_for(read_status(), timeout=timeout)
+                )
             except asyncio.TimeoutError:
                 pass
 
@@ -115,6 +119,6 @@ async def status(
 class _CliStatusReport(BaseModel):
     class NodeStatus(BaseModel):
         node_id: str
-        running_requests: List[Result]
+        running_requests: List[Result[Any]]
 
     node_status: List[NodeStatus] = Field(default_factory=list)

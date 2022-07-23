@@ -3,8 +3,8 @@ The API, responsible for receiving the files, submitting jobs, and getting their
 """
 
 import asyncio
-from contextlib import suppress
 import os
+from contextlib import suppress
 from typing import Optional
 from uuid import UUID, uuid4
 
@@ -18,13 +18,12 @@ from fastapi import (
     Response,
     UploadFile,
 )
-from pydantic import confloat
-
 from mognet_demo.config import DemoConfig
 from mognet_demo.models import Job, Upload, UploadJobResult
 from mognet_demo.mognet_app import app as mognet_app
 from mognet_demo.s3 import get_s3_client
 from mognet_demo.tasks import process_document_upload
+from pydantic import confloat
 
 app = FastAPI(
     title="Mognet Demo API",

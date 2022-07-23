@@ -1,15 +1,16 @@
 from abc import ABCMeta, abstractmethod
-from mognet.model.queue_stats import QueueStats
-from mognet.primitives.queries import QueryResponseMessage
-from typing import AsyncGenerator, Awaitable, Callable, List, Optional
+from typing import Any, AsyncGenerator, Callable, Coroutine, Optional
 
 from pydantic.main import BaseModel
+
+from mognet.model.queue_stats import QueueStats
+from mognet.primitives.queries import QueryResponseMessage
 
 
 class MessagePayload(BaseModel):
     id: str
     kind: str
-    payload: dict
+    payload: Any
 
     priority: int = 5
 
@@ -35,11 +36,11 @@ class TaskQueue(BaseModel):
 
 class BaseBroker(metaclass=ABCMeta):
     @abstractmethod
-    async def send_task_message(self, queue: str, payload: MessagePayload):
+    async def send_task_message(self, queue: str, payload: MessagePayload) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    async def send_control_message(self, payload: MessagePayload):
+    async def send_control_message(self, payload: MessagePayload) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -50,30 +51,30 @@ class BaseBroker(metaclass=ABCMeta):
     def consume_control_queue(self) -> AsyncGenerator[IncomingMessagePayload, None]:
         raise NotImplementedError
 
-    async def __aenter__(self):
+    async def __aenter__(self):  # type: ignore
         return self
 
-    async def __aexit__(self, *args, **kwargs):
+    async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         return None
 
-    async def connect(self):
+    async def connect(self) -> None:
         pass
 
-    async def close(self):
+    async def close(self) -> None:
         pass
 
     @abstractmethod
-    async def setup_task_queue(self, queue: TaskQueue):
+    async def setup_task_queue(self, queue: TaskQueue) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    async def setup_control_queue(self):
+    async def setup_control_queue(self) -> None:
         raise NotImplementedError
 
-    async def set_task_prefetch(self, prefetch: int):
+    async def set_task_prefetch(self, prefetch: int) -> None:
         pass
 
-    async def set_control_prefetch(self, prefetch: int):
+    async def set_control_prefetch(self, prefetch: int) -> None:
         pass
 
     @abstractmethod
@@ -83,7 +84,9 @@ class BaseBroker(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    async def send_reply(self, message: IncomingMessagePayload, reply: MessagePayload):
+    async def send_reply(
+        self, message: IncomingMessagePayload, reply: MessagePayload
+    ) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -95,8 +98,8 @@ class BaseBroker(metaclass=ABCMeta):
         raise NotImplementedError
 
     def add_connection_failed_callback(
-        self, cb: Callable[[Optional[BaseException]], Awaitable]
-    ):
+        self, cb: Callable[[Optional[BaseException]], Coroutine[Any, Any, Any]]
+    ) -> None:
         pass
 
     @abstractmethod

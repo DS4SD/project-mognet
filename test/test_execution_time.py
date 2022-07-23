@@ -1,13 +1,12 @@
-from datetime import timedelta, datetime, timezone
-from mognet.exceptions.result_exceptions import Revoked
-from mognet.model.result_state import ResultState
 import time
-import pytest
-
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
-from mognet import Request
+import pytest
 
+from mognet import Request
+from mognet.exceptions.result_exceptions import Revoked
+from mognet.model.result_state import ResultState
 
 if TYPE_CHECKING:
     from mognet import App

@@ -2,6 +2,10 @@
 
 Mognet is a fast, simple framework to build distributed applications using task queues.
 
+[![PyPI](https://img.shields.io/pypi/v/mognet)](https://www.pypi.org/project/mognet)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/mognet)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 ## Installing
 
 Mognet can be installed via pip, with:

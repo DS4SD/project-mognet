@@ -3,8 +3,8 @@ Auxilliary models.
 """
 from typing import List, Optional
 from uuid import UUID
-from pydantic import BaseModel
 
+from pydantic import BaseModel
 
 from mognet.model.result_state import ResultState
 

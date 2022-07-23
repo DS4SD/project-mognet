@@ -1,0 +1,17 @@
+{
+    "result_backend": {
+        "redis": {
+            "url": "redis://redis:6379/0"
+        }
+    },
+    "state_backend": {
+        "redis": {
+            "url": "redis://redis:6379/0"
+        }
+    },
+    "broker": {
+        "amqp": {
+            "url": "amqp://rabbitmq:5672"
+        }
+    }
+}

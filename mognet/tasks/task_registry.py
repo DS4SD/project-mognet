@@ -1,10 +1,8 @@
-from contextvars import ContextVar
 import logging
+from contextvars import ContextVar
+from typing import Any, Dict, List, Optional, Protocol
 
 from mognet.context.context import Context
-from typing import Any, Callable, Dict, List, Optional
-
-from typing import Protocol
 
 _log = logging.getLogger(__name__)
 
@@ -21,7 +19,7 @@ class UnknownTask(KeyError):
         super().__init__(task_name)
         self.task_name = task_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Unknown task: {self.task_name!r}; did you forget to register it, or import it's module in the app's configuration?"
 
 
@@ -30,7 +28,7 @@ class TaskRegistry:
     _names_to_tasks: Dict[str, TaskProtocol]
     _tasks_to_names: Dict[TaskProtocol, str]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._names_to_tasks = {}
         self._tasks_to_names = {}
 
@@ -47,7 +45,9 @@ class TaskRegistry:
     def registered_task_names(self) -> List[str]:
         return list(self._names_to_tasks)
 
-    def add_task_function(self, func: Callable, *, name: Optional[str] = None):
+    def add_task_function(
+        self, func: TaskProtocol, *, name: Optional[str] = None
+    ) -> None:
         full_func_name = _get_full_func_name(func)
 
         if name is None:
@@ -63,11 +63,11 @@ class TaskRegistry:
 
         _log.debug("Registered function %r as task %r", full_func_name, name)
 
-    def register_globally(self):
+    def register_globally(self) -> None:
         task_registry.set(self)
 
 
-def _get_full_func_name(func) -> str:
+def _get_full_func_name(func: Any) -> str:
     func_name = getattr(func, "__qualname__", None) or getattr(func, "__name__", None)
 
     full_func_name = ".".join(

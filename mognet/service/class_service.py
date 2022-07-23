@@ -1,12 +1,13 @@
 from abc import ABCMeta, abstractmethod
-from typing import TYPE_CHECKING, TypeVar, Generic
-
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 if TYPE_CHECKING:
     from mognet.app.app_config import AppConfig
     from mognet.context.context import Context
 
 _TReturn = TypeVar("_TReturn")
+
+_TSelf = TypeVar("_TSelf")
 
 
 class ClassService(Generic[_TReturn], metaclass=ABCMeta):
@@ -27,17 +28,17 @@ class ClassService(Generic[_TReturn], metaclass=ABCMeta):
         self.config = config
 
     @abstractmethod
-    def __call__(self, context: "Context", *args, **kwds) -> _TReturn:
+    def __call__(self, context: "Context", *args: Any, **kwds: Any) -> _TReturn:
         raise NotImplementedError
 
-    def __enter__(self):
+    def __enter__(self: _TSelf) -> _TSelf:
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         self.close()
 
-    def close(self):
+    def close(self) -> None:
         pass
 
-    async def wait_closed(self):
+    async def wait_closed(self) -> None:
         pass

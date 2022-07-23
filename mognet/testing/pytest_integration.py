@@ -1,14 +1,15 @@
 import asyncio
-import pytest
+from typing import Any, AsyncIterable
+
 import pytest_asyncio
+
 from mognet import App
 
 
-def create_app_fixture(app: App):
+def create_app_fixture(app: App) -> Any:
     """Create a Pytest fixture for a Mognet application."""
 
-    @pytest_asyncio.fixture
-    async def app_fixture():
+    async def app_fixture() -> AsyncIterable[App]:
         async with app:
             start_task = asyncio.create_task(app.start())
             yield app
@@ -20,4 +21,4 @@ def create_app_fixture(app: App):
             except BaseException:  # pylint: disable=broad-except
                 pass
 
-    return app_fixture
+    return pytest_asyncio.fixture(app_fixture)

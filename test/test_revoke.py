@@ -1,9 +1,11 @@
 import asyncio
 import uuid
+
+import pytest
+
+from mognet import App, Context, Request, task
 from mognet.model.result import ResultFailed
 from mognet.model.result_state import ResultState
-import pytest
-from mognet import App, Request, Context, task
 
 
 @pytest.mark.asyncio

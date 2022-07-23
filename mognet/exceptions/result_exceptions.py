@@ -1,7 +1,7 @@
-from mognet.exceptions.base_exceptions import MognetError
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
+from mognet.exceptions.base_exceptions import MognetError
 
 if TYPE_CHECKING:
     from mognet.model.result import Result
@@ -16,7 +16,7 @@ class ResultNotReady(ResultError):
 
 
 class ResultFailed(ResultError):
-    def __init__(self, result: "Result") -> None:
+    def __init__(self, result: "Result[Any]") -> None:
         super().__init__(result)
         self.result = result
 

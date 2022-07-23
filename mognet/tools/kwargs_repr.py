@@ -1,4 +1,4 @@
-from typing import Optional, Any
+from typing import Any, Dict, Optional, Tuple
 
 
 def _format_value(value: Any, *, max_length: Optional[int]) -> str:
@@ -11,8 +11,8 @@ def _format_value(value: Any, *, max_length: Optional[int]) -> str:
 
 
 def format_kwargs_repr(
-    args: tuple,
-    kwargs: dict,
+    args: Tuple[Any, ...],
+    kwargs: Dict[str, Any],
     *,
     value_max_length: Optional[int] = 64,
 ) -> str:

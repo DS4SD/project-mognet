@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import inspect
 import logging
@@ -7,9 +9,8 @@ from typing import (
     Any,
     Awaitable,
     Callable,
-    Coroutine,
-    Dict,
     List,
+    Optional,
     Set,
     Type,
     TypeVar,
@@ -18,15 +19,17 @@ from typing import (
     overload,
 )
 
+from mognet.model.result import Result
+
 if sys.version_info >= (3, 10):
-    from typing import ParamSpec, Concatenate
+    from typing import Concatenate, ParamSpec
 else:
     from typing_extensions import ParamSpec, Concatenate
 
 from uuid import UUID
 
 from mognet.exceptions.result_exceptions import ResultLost
-from mognet.model.result import ResultState
+from mognet.model.result_state import ResultState
 from mognet.primitives.request import Request
 from mognet.service.class_service import ClassService
 
@@ -34,12 +37,12 @@ _Return = TypeVar("_Return")
 
 if TYPE_CHECKING:
     from mognet.app.app import App
-    from mognet.model.result import Result
     from mognet.state.state import State
     from mognet.worker.worker import Worker
 
 _log = logging.getLogger(__name__)
 
+_T = TypeVar("_T")
 _P = ParamSpec("_P")
 
 
@@ -55,14 +58,14 @@ class Context:
 
     state: "State"
 
-    request: "Request"
+    request: "Request[Any]"
 
     _dependencies: Set[UUID]
 
     def __init__(
         self,
         app: "App",
-        request: "Request",
+        request: "Request[Any]",
         state: "State",
         worker: "Worker",
     ):
@@ -75,7 +78,7 @@ class Context:
 
         self.create_request = self.app.create_request
 
-    async def submit(self, request: "Request"):
+    async def submit(self, request: "Request[_Return]") -> Result[_Return]:
         """
         Submits a new request as part of this one.
 
@@ -98,7 +101,7 @@ class Context:
         self,
         request: Callable[Concatenate["Context", _P], _Return],
         *args: _P.args,
-        **kwargs: _P.kwargs
+        **kwargs: _P.kwargs,
     ) -> _Return:
         """
         Short-hand method for creating a Request from a function decorated with `@task`,
@@ -114,7 +117,7 @@ class Context:
         self,
         request: Callable[Concatenate["Context", _P], Awaitable[_Return]],
         *args: _P.args,
-        **kwargs: _P.kwargs
+        **kwargs: _P.kwargs,
     ) -> _Return:
         """
         Short-hand method for creating a Request from a function decorated with `@task`,
@@ -124,7 +127,7 @@ class Context:
         """
         ...
 
-    async def run(self, request, *args, **kwargs):
+    async def run(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """
         Submits and runs a new request as part of this one.
 
@@ -159,7 +162,7 @@ class Context:
             if not self._dependencies and not cancelled:
                 await asyncio.shield(self._resume())
 
-    def _log_dependencies(self):
+    def _log_dependencies(self) -> None:
         _log.debug(
             "Task %r is waiting on %r dependencies",
             self.request,
@@ -167,16 +170,21 @@ class Context:
         )
 
     async def gather(
-        self, *results_or_ids: Union["Result", UUID], return_exceptions: bool = False
+        self, *results_or_ids: Union[Result[Any], UUID], return_exceptions: bool = False
     ) -> List[Any]:
-        results = []
+        if not results_or_ids:
+            return []
+
+        results: List[Result[Any]] = []
         cancelled = False
         try:
+            result: Union[UUID, Optional[Result[Any]]]
             for result in results_or_ids:
                 if isinstance(result, UUID):
                     result = await self.app.result_backend.get(result)
 
-                results.append(result)
+                if result is not None:
+                    results.append(result)
 
             # If we transition from having no dependencies
             # to having some, then we should suspend.
@@ -188,7 +196,9 @@ class Context:
             if not had_dependencies and self._dependencies:
                 await asyncio.shield(self._suspend())
 
-            return await asyncio.gather(*results, return_exceptions=return_exceptions)
+            return list(
+                await asyncio.gather(*results, return_exceptions=return_exceptions)
+            )
         except asyncio.CancelledError:
             cancelled = True
             raise
@@ -202,7 +212,7 @@ class Context:
 
     @overload
     def get_service(
-        self, func: Type[ClassService[_Return]], *args, **kwargs
+        self, func: Type[ClassService[_Return]], *args: Any, **kwargs: Any
     ) -> _Return:
         ...
 
@@ -211,20 +221,22 @@ class Context:
         self,
         func: Callable[Concatenate["Context", _P], _Return],
         *args: _P.args,
-        **kwargs: _P.kwargs
+        **kwargs: _P.kwargs,
     ) -> _Return:
         ...
 
-    def get_service(self, func, *args, **kwargs):
+    def get_service(self, func: Any, *args: Any, **kwargs: Any) -> Any:
         """
         Get a service to use in the task function.
         This can be used for dependency injection purposes.
         """
 
+        svc: Callable[[Context], Any]
+
         if inspect.isclass(func) and issubclass(func, ClassService):
             if func not in self.app.services:
                 # This cast() is only here to silence Pylance (because it thinks the class is abstract)
-                instance: ClassService = cast(Any, func)(self.app.config)
+                instance: ClassService[Any] = cast(Any, func)(self.app.config)
                 self.app.services[func] = instance.__enter__()
 
             svc = self.app.services[func]
@@ -233,7 +245,7 @@ class Context:
 
         return svc(self, *args, **kwargs)
 
-    async def _suspend(self):
+    async def _suspend(self) -> None:
         _log.debug("Suspending %r", self.request)
 
         result = await self.get_result()
@@ -243,7 +255,7 @@ class Context:
 
         await self._worker.add_waiting_task(self.request.id)
 
-    async def get_result(self):
+    async def get_result(self) -> Result[Any]:
         """
         Gets the Result associated with this task.
 
@@ -274,7 +286,7 @@ class Context:
         """
         return asyncio.run_coroutine_threadsafe(coro, loop=self.app.loop).result()
 
-    async def set_metadata(self, **kwargs: Any):
+    async def set_metadata(self, **kwargs: Any) -> None:
         """
         Update metadata on the Result associated with the current task.
         """
@@ -282,7 +294,7 @@ class Context:
         result = await self.get_result()
         return await result.set_metadata(**kwargs)
 
-    async def _resume(self):
+    async def _resume(self) -> None:
         _log.debug("Resuming %r", self.request)
 
         result = await self.get_result()

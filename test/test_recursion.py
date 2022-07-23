@@ -1,6 +1,6 @@
 import pytest
 
-from mognet import task, Request, App, Context
+from mognet import App, Context, Request, task
 
 
 @task(name="test.recursive_factorial")

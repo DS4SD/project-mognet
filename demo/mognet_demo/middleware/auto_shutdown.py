@@ -16,11 +16,12 @@ It is therefore a good candidate for tasks like:
 import asyncio
 import logging
 from typing import TYPE_CHECKING, NoReturn, Optional
-from mognet.middleware.middleware import Middleware
+
 from mognet.cli.exceptions import GracefulShutdown
+from mognet.middleware.middleware import Middleware
 
 if TYPE_CHECKING:
-    from mognet import Result, Context, App
+    from mognet import App, Context, Result
 
 _log = logging.getLogger(__name__)
 

@@ -1,0 +1,35 @@
+version: "2.4"
+
+services:
+  mognet:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+      args:
+        VARIANT: "3.8"
+        INSTALL_NODE: "false"
+
+    mem_limit: 4g
+    cpus: 2
+    working_dir: /workspaces/project-mognet
+    volumes:
+      - ..:/workspaces/project-mognet:cached
+      - vscode_server_data:/home/vscode/.vscode-server
+      - cache:/home/vscode/.cache
+
+    environment:
+      - MOGNET_CONFIG_FILE=/workspaces/project-mognet/.devcontainer/config.json
+
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        sudo chown -R vscode:vscode /home/vscode/.vscode-server
+        sudo chown -R vscode:vscode /home/vscode/.cache
+        exec sleep infinity
+
+volumes:
+  results_backend_data: {}
+  vscode_server_data: {}
+  cache: {}
