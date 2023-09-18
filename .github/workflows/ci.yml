@@ -8,8 +8,6 @@ on:
       - "**"
       - "!gh-pages"
 
-env:
-  POETRY_VIRTUALENVS_CREATE: false
 
 jobs:
   test-build-docs:
@@ -25,4 +23,4 @@ jobs:
           cache-dependency-path: 'poetry.lock'
       - name: Install dependencies
         run: poetry install
-      - run: mkdocs build --verbose --clean --strict
+      - run: poetry run mkdocs build --verbose --clean --strict
