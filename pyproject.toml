@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mognet"
-version = "1.4.0"
+version = "1.5.0"
 description = "Mognet is a fast, simple framework to build distributed applications using task queues."
 authors = ["André Carvalho <afecarvalho@gmail.com>", "Christoph Auer <cau@zurich.ibm.com>", "Michele Dolfi <dol@zurich.ibm.com>", "Peter Staar <taa@zurich.ibm.com>"]
 license = "MIT"
