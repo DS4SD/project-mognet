@@ -66,7 +66,7 @@ class ResultValueHolder(BaseModel):
     """
 
     value_type: str
-    raw_value: Any
+    raw_value: Any = None
 
     def deserialize(self) -> Any:
         if self.raw_value is None:
@@ -126,8 +126,8 @@ class _ExceptionInfo(BaseModel):
 
     traceback: str
 
-    raw_data: Optional[str]
-    raw_data_encoding: Optional[str]
+    raw_data: Optional[str] = None
+    raw_data_encoding: Optional[str] = None
 
     @classmethod
     def from_exception(cls, exception: BaseException):
@@ -182,13 +182,13 @@ class Result(BaseModel):
 
     parent_id: Optional[UUID] = None
 
-    created: Optional[datetime]
-    started: Optional[datetime]
-    finished: Optional[datetime]
+    created: Optional[datetime] = None
+    started: Optional[datetime] = None
+    finished: Optional[datetime] = None
 
-    node_id: Optional[str]
+    node_id: Optional[str] = None
 
-    request_kwargs_repr: Optional[str]
+    request_kwargs_repr: Optional[str] = None
 
     _backend: "BaseResultBackend" = PrivateAttr()
     _children: Optional[ResultChildren] = PrivateAttr()
