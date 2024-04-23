@@ -66,7 +66,7 @@ class ResultValueHolder(BaseModel):
     """
 
     value_type: str
-    raw_value: Any = None
+    raw_value: Any
 
     def deserialize(self) -> Any:
         if self.raw_value is None:
