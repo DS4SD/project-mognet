@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 from typing import Any, Dict, List, Tuple, Union
 
 # Taken from pydantic.error_wrappers
