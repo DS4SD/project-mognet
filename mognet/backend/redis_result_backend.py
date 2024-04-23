@@ -142,7 +142,7 @@ class RedisResultBackend(BaseResultBackend):
         return self._decode_result(value)
 
     def _encode_result_value(self, value: ResultValueHolder) -> Dict[str, bytes]:
-        contents = value.json().encode()
+        contents = value.model_dump_json().encode()
         encoding = b"null"
 
         if self.config.redis.result_value_encoding == Encoding.GZIP:
@@ -432,7 +432,7 @@ class RedisResultBackend(BaseResultBackend):
 
 
 def _encode_result(result: Result) -> Dict[str, bytes]:
-    json_dict: dict = json.loads(result.json())
+    json_dict: dict = json.loads(result.model_dump_json())
     return _dict_to_json_dict(json_dict)
 
 

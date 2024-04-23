@@ -158,7 +158,7 @@ async def tree(
                 t.show()
 
             if format == "json":
-                print(tree.json(indent=json_indent, ensure_ascii=False))
+                print(tree.model_dump_json(indent=json_indent))
 
             if not poll:
                 break
