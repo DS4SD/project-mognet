@@ -164,7 +164,7 @@ class RedisResultBackend(BaseResultBackend):
         if encoded.get(b"content_type") != _json_bytes("application/json"):
             raise ValueError(f"Unknown content_type={encoded.get(b'content_type')!r}")
 
-        return ResultValueHolder.parse_raw(contents, content_type="application/json")
+        return ResultValueHolder.model_validate_json(contents)
 
     @_retry
     async def set(self, result_id: UUID, result: Result):
