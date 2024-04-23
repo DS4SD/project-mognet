@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 from mognet.tools.dates import now_utc
-from pydantic.tools import parse_obj_as
+from pydantic.v1.tools import parse_obj_as
 from uuid import UUID
 
 if TYPE_CHECKING:

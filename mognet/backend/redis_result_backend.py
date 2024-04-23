@@ -10,7 +10,7 @@ from datetime import timedelta
 from typing import Any, AnyStr, Dict, Iterable, List, Optional, Set
 from uuid import UUID
 
-from pydantic.tools import parse_raw_as
+from pydantic.v1.tools import parse_raw_as
 from redis.asyncio import Redis, from_url
 from redis.exceptions import ConnectionError, TimeoutError
 

@@ -25,7 +25,7 @@ from mognet.model.result import Result, ResultState
 from mognet.state.state import State
 from mognet.tasks.task_registry import UnknownTask
 from pydantic import ValidationError
-from pydantic.decorator import ValidatedFunction
+from pydantic.v1.decorator import ValidatedFunction
 from mognet.primitives.request import Request
 
 if TYPE_CHECKING:
