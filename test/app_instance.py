@@ -13,11 +13,11 @@ from mognet.app.app_config import AppConfig
 
 config = AppConfig(
     result_backend=ResultBackendConfig(
-        redis=RedisResultBackendSettings(url="redis://redis")
+        redis=RedisResultBackendSettings(url="redis://localhost:6379/0")
     ),
-    broker=BrokerConfig(amqp=AmqpBrokerSettings(url="amqp://rabbitmq")),
+    broker=BrokerConfig(amqp=AmqpBrokerSettings(url="amqp://localhost:5672")),
     state_backend=StateBackendConfig(
-        redis=RedisStateBackendSettings(url="redis://redis")
+        redis=RedisStateBackendSettings(url="redis://localhost:6379/0")
     ),
     task_routes={},
     minimum_concurrency=1,

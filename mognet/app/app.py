@@ -201,7 +201,7 @@ class App:
         try:
             async for response in responses:
                 try:
-                    yield StatusResponseMessage.parse_obj(response)
+                    yield StatusResponseMessage.model_validate(response)
                 except asyncio.CancelledError:
                     break
                 except Exception as exc:  # pylint: disable=broad-except
@@ -682,7 +682,7 @@ class App:
 
         try:
             if msg.kind == Revoke.MESSAGE_KIND:
-                abort = Revoke.parse_obj(msg.payload)
+                abort = Revoke.model_validate(msg.payload)
 
                 _log.debug("Received request to revoke request id=%r", abort.id)
 
@@ -704,7 +704,7 @@ class App:
                 return
 
             if msg.kind == "Query":
-                query = QueryRequestMessage.parse_obj(msg.payload)
+                query = QueryRequestMessage.model_validate(msg.payload)
 
                 if query.name == "Status":
                     # Get the status of this worker and reply to the incoming message

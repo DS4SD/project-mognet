@@ -135,7 +135,7 @@ class InMemoryBroker(BaseBroker):
 
             while True:
                 response = await q.get()
-                yield QueryResponseMessage.parse_obj(response.payload)
+                yield QueryResponseMessage.model_validate(response.payload)
         finally:
             self._callback_queues.pop(queue_id, None)
 

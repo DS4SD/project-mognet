@@ -257,7 +257,7 @@ class AmqpBroker(BaseBroker):
                         msg = _AmqpIncomingMessagePayload(
                             broker=self, incoming_message=message, **contents
                         )
-                        yield QueryResponseMessage.parse_obj(msg.payload)
+                        yield QueryResponseMessage.model_validate(msg.payload)
         finally:
             if callback_queue is not None:
                 await callback_queue.delete()

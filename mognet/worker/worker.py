@@ -480,7 +480,7 @@ class Worker:
         Returns said task, after adding completion handlers to it.
         """
         _log.debug("Parsing input of message id=%r as Request", payload.id)
-        req = Request.parse_obj(payload.payload)
+        req = Request.model_validate(payload.payload)
 
         async def request_processor():
             try:

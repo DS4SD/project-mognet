@@ -35,7 +35,7 @@ from mognet import App, task, Context, AppConfig
 #
 # Note that we also don't specify the URLs to the Redis and RabbitMQ themselves,
 # opting instead for the defaults.
-config = AppConfig.parse_obj({
+config = AppConfig.model_validate({
     "result_backend": {
         # Assumes a Redis on localhost:6379 with no credentials
         "redis": {}  

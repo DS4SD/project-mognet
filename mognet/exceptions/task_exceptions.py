@@ -34,4 +34,4 @@ class InvalidTaskArguments(Exception):
 
     @classmethod
     def from_validation_error(cls, validation_error: ValidationError):
-        return cls([InvalidErrorInfo.parse_obj(e) for e in validation_error.errors()])
+        return cls([InvalidErrorInfo.model_validate(e) for e in validation_error.errors()])
