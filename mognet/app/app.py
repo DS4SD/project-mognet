@@ -260,7 +260,7 @@ class App:
             payload = MessagePayload(
                 id=str(req.id),
                 kind="Request",
-                payload=req,
+                payload=req.model_dump(),
                 priority=req.priority,
             )
 
@@ -407,7 +407,7 @@ class App:
         payload = MessagePayload(
             id=str(uuid.uuid4()),
             kind=Revoke.MESSAGE_KIND,
-            payload=Revoke(id=request_id),
+            payload=Revoke(id=request_id).model_dump(),
         )
 
         await self.broker.send_control_message(payload)
@@ -723,7 +723,7 @@ class App:
                     )
 
                     payload = MessagePayload(
-                        id=str(reply.id), kind=reply.kind, payload=reply
+                        id=str(reply.id), kind=reply.kind, payload=reply.model_dump()
                     )
 
                     return await self.broker.send_reply(msg, payload)
