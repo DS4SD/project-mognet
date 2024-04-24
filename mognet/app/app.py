@@ -194,7 +194,7 @@ class App:
             payload=MessagePayload(
                 id=str(request.id),
                 kind="Query",
-                payload=request,
+                payload=request.model_dump(),
             )
         )
 
