@@ -24,7 +24,7 @@ from mognet.exceptions.too_many_retries import TooManyRetries
 from mognet.model.result import Result, ResultState
 from mognet.state.state import State
 from mognet.tasks.task_registry import UnknownTask
-from pydantic import ValidationError
+from pydantic.v1 import ValidationError
 from pydantic.v1.decorator import ValidatedFunction
 from mognet.primitives.request import Request
 

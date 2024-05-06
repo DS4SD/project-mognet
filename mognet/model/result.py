@@ -19,10 +19,9 @@ from .result_state import (
 )
 
 from datetime import datetime, timedelta
+from pydantic import BaseModel, TypeAdapter
 from pydantic.fields import PrivateAttr
-from pydantic.main import BaseModel
 from mognet.tools.dates import now_utc
-from pydantic.v1.tools import parse_obj_as
 from uuid import UUID
 
 if TYPE_CHECKING:
@@ -75,7 +74,7 @@ class ResultValueHolder(BaseModel):
         if self.value_type is not None:
             cls = _get_attr(self.value_type)
 
-            value = parse_obj_as(cls, self.raw_value)
+            value = TypeAdapter(cls).validate_python(self.raw_value)
         else:
             value = self.raw_value
 
