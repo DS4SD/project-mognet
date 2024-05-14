@@ -3,7 +3,6 @@ from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
 from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 
-from pydantic.fields import Field
 from typing_extensions import Annotated
 
 

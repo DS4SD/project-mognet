@@ -10,7 +10,7 @@ from datetime import timedelta
 from typing import Any, AnyStr, Dict, Iterable, List, Optional, Set
 from uuid import UUID
 
-from pydantic.v1.tools import parse_raw_as
+from pydantic import TypeAdapter
 from redis.asyncio import Redis, from_url
 from redis.exceptions import ConnectionError, TimeoutError
 
@@ -322,7 +322,7 @@ class RedisResultBackend(BaseResultBackend):
             while True:
                 raw_state = await shield(self._redis.hget(key, "state")) or b"null"
 
-                state = parse_raw_as(t, raw_state)
+                state = TypeAdapter(t).validate_json(raw_state)
 
                 if state is None:
                     raise ResultValueLost(result_id)

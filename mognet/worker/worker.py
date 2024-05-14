@@ -1,32 +1,25 @@
-from datetime import datetime, timedelta
-from enum import Enum
-import inspect
-
-from mognet.exceptions.task_exceptions import InvalidTaskArguments, Pause
 import asyncio
+import functools
+import inspect
 import logging
 from asyncio.futures import Future
-from mognet.broker.base_broker import IncomingMessagePayload
-from typing import (
-    AsyncGenerator,
-    Optional,
-    Set,
-    TYPE_CHECKING,
-    Dict,
-    List,
-)
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import TYPE_CHECKING, AsyncGenerator, Dict, List, Optional, Set
 from uuid import UUID
 
-from mognet.tools.backports.aioitertools import as_generated
+from pydantic import ValidationError as V2ValidationError
+from pydantic import validate_call
+
 from mognet.broker.base_broker import IncomingMessagePayload
 from mognet.context.context import Context
+from mognet.exceptions.task_exceptions import InvalidTaskArguments, Pause
 from mognet.exceptions.too_many_retries import TooManyRetries
 from mognet.model.result import Result, ResultState
+from mognet.primitives.request import Request
 from mognet.state.state import State
 from mognet.tasks.task_registry import UnknownTask
-from pydantic.v1 import ValidationError
-from pydantic.v1.decorator import ValidatedFunction
-from mognet.primitives.request import Request
+from mognet.tools.backports.aioitertools import as_generated
 
 if TYPE_CHECKING:
     from mognet.app.app import App
@@ -336,15 +329,13 @@ class Worker:
             # Create a validated version of the function.
             # This not only does argument validation, but it also parses the values
             # into objects.
-            validated = ValidatedFunction(
+
+            validated_func = validate_call(
                 task_function, config=_TaskFuncArgumentValidationConfig
             )
 
-            # This does the model validation part.
-            model = validated.init_model_instance(context, *req.args, **req.kwargs)
-
             if inspect.iscoroutinefunction(task_function):
-                fut = validated.execute(model)
+                fut = validated_func(context, *req.args, **req.kwargs)
             else:
                 _log.debug(
                     "Handler for task %r is not a coroutine function, running in the loop's default executor",
@@ -354,9 +345,12 @@ class Worker:
                 # Run non-coroutine functions inside an executor.
                 # This allows them to run without blocking the event loop
                 # (providing the GIL does not block it either)
-                fut = self.app.loop.run_in_executor(None, validated.execute, model)
+                fut = self.app.loop.run_in_executor(
+                    None,
+                    functools.partial(validated_func, context, *req.args, **req.kwargs),
+                )
 
-        except ValidationError as exc:
+        except V2ValidationError as exc:
             _log.error(
                 "Could not call task function %r because of a validation error",
                 task_function,
@@ -415,6 +409,20 @@ class Worker:
             # Re-raise the cancellation, this will be caught in the parent function
             # and prevent ack/nack
             raise
+        except V2ValidationError as exc: # will enter for sync functions here.
+            _log.error(
+                "Could not call task function %r because of a validation error",
+                task_function,
+                exc_info=exc,
+            )
+
+            invalid = InvalidTaskArguments.from_validation_error(exc)
+
+            result = await asyncio.shield(
+                result.set_error(invalid, state=ResultState.INVALID)
+            )
+
+            return await asyncio.shield(self._on_complete(context, result))
         except Exception as exc:  # pylint: disable=broad-except
             state = ResultState.FAILURE
 
