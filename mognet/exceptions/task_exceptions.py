@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 from typing import Any, Dict, List, Tuple, Union
 
 # Taken from pydantic.error_wrappers
@@ -34,4 +34,4 @@ class InvalidTaskArguments(Exception):
 
     @classmethod
     def from_validation_error(cls, validation_error: ValidationError):
-        return cls([InvalidErrorInfo.parse_obj(e) for e in validation_error.errors()])
+        return cls([InvalidErrorInfo.model_validate(e) for e in validation_error.errors()])

@@ -1,18 +1,21 @@
 from datetime import timedelta, datetime
 from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
 from uuid import UUID, uuid4
-from pydantic import conint
+from pydantic import BaseModel, Field
 
-from pydantic.fields import Field
-from pydantic.generics import GenericModel
+from typing_extensions import Annotated
 
 
 TReturn = TypeVar("TReturn")
 
-Priority = conint(ge=0, le=10)
+Priority = Annotated[int, Field(ge=0, le=10)]
 
 
-class Request(GenericModel, Generic[TReturn]):
+class Request(BaseModel, Generic[TReturn]):
+    """
+    Represents the Mognet request.
+
+    """
     id: UUID = Field(default_factory=uuid4)
     name: str
 

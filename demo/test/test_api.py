@@ -23,7 +23,7 @@ def test_full_a_to_z():
     assert submit_response.ok
 
     # 2. Get the job to wait for...
-    job = Job.parse_obj(submit_response.json())
+    job = Job.model_validate(submit_response.json())
 
     # 3. Wait for it, through polling...
     while True:
@@ -33,7 +33,7 @@ def test_full_a_to_z():
 
         assert result_response.ok
 
-        result = UploadJobResult.parse_obj(result_response.json())
+        result = UploadJobResult.model_validate(result_response.json())
 
         if result.job_status not in READY_STATES:
             time.sleep(1)

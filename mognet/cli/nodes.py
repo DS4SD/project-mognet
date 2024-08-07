@@ -104,7 +104,7 @@ async def status(
                 typer.echo(tabulate.tabulate(table_data, headers=table_headers))
 
             elif format == "json":
-                typer.echo(report.json(indent=json_indent, ensure_ascii=False))
+                typer.echo(report.model_dump_json(indent=json_indent))
 
             if not poll:
                 break

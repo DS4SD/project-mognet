@@ -88,7 +88,7 @@ class AppConfig(BaseModel):
     @classmethod
     def from_file(cls, file_path: str) -> "AppConfig":
         with open(file_path, "r", encoding="utf-8") as config_file:
-            return cls.parse_raw(config_file.read())
+            return cls.model_validate_json(config_file.read())
 
     # Maximum number of attempts to connect
     max_reconnect_retries: int = 5

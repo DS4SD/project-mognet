@@ -10,7 +10,7 @@ from datetime import timedelta
 from typing import Any, AnyStr, Dict, Iterable, List, Optional, Set
 from uuid import UUID
 
-from pydantic.tools import parse_raw_as
+from pydantic import TypeAdapter
 from redis.asyncio import Redis, from_url
 from redis.exceptions import ConnectionError, TimeoutError
 
@@ -142,7 +142,7 @@ class RedisResultBackend(BaseResultBackend):
         return self._decode_result(value)
 
     def _encode_result_value(self, value: ResultValueHolder) -> Dict[str, bytes]:
-        contents = value.json().encode()
+        contents = value.model_dump_json().encode()
         encoding = b"null"
 
         if self.config.redis.result_value_encoding == Encoding.GZIP:
@@ -164,7 +164,7 @@ class RedisResultBackend(BaseResultBackend):
         if encoded.get(b"content_type") != _json_bytes("application/json"):
             raise ValueError(f"Unknown content_type={encoded.get(b'content_type')!r}")
 
-        return ResultValueHolder.parse_raw(contents, content_type="application/json")
+        return ResultValueHolder.model_validate_json(contents)
 
     @_retry
     async def set(self, result_id: UUID, result: Result):
@@ -322,7 +322,7 @@ class RedisResultBackend(BaseResultBackend):
             while True:
                 raw_state = await shield(self._redis.hget(key, "state")) or b"null"
 
-                state = parse_raw_as(t, raw_state)
+                state = TypeAdapter(t).validate_json(raw_state)
 
                 if state is None:
                     raise ResultValueLost(result_id)
@@ -432,7 +432,7 @@ class RedisResultBackend(BaseResultBackend):
 
 
 def _encode_result(result: Result) -> Dict[str, bytes]:
-    json_dict: dict = json.loads(result.json())
+    json_dict: dict = json.loads(result.model_dump_json())
     return _dict_to_json_dict(json_dict)
 
 

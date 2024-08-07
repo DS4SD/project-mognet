@@ -27,4 +27,4 @@ class ResultTree(BaseModel):
         }
 
 
-ResultTree.update_forward_refs()
+ResultTree.model_rebuild()

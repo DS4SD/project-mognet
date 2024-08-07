@@ -167,7 +167,7 @@ class AmqpBroker(BaseBroker):
         amqp_queue = self._task_queue_name(queue)
 
         msg = Message(
-            body=payload.json().encode(),
+            body=payload.model_dump_json().encode(),
             content_type="application/json",
             content_encoding="utf-8",
             priority=payload.priority,
@@ -201,7 +201,7 @@ class AmqpBroker(BaseBroker):
     @_retry
     async def send_control_message(self, payload: MessagePayload):
         msg = Message(
-            body=payload.json().encode(),
+            body=payload.model_dump_json().encode(),
             content_type="application/json",
             content_encoding="utf-8",
             message_id=payload.id,
@@ -226,7 +226,7 @@ class AmqpBroker(BaseBroker):
         await callback_queue.bind(self._direct_exchange)
 
         msg = Message(
-            body=payload.json().encode(),
+            body=payload.model_dump_json().encode(),
             content_type="application/json",
             content_encoding="utf-8",
             message_id=payload.id,
@@ -257,7 +257,7 @@ class AmqpBroker(BaseBroker):
                         msg = _AmqpIncomingMessagePayload(
                             broker=self, incoming_message=message, **contents
                         )
-                        yield QueryResponseMessage.parse_obj(msg.payload)
+                        yield QueryResponseMessage.model_validate(msg.payload)
         finally:
             if callback_queue is not None:
                 await callback_queue.delete()
@@ -358,7 +358,7 @@ class AmqpBroker(BaseBroker):
             raise ValueError("Message has no reply_to set")
 
         msg = Message(
-            body=reply.json().encode(),
+            body=reply.model_dump_json().encode(),
             content_type="application/json",
             content_encoding="utf-8",
             message_id=reply.id,
