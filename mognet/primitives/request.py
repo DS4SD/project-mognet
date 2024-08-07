@@ -12,6 +12,10 @@ Priority = Annotated[int, Field(ge=0, le=10)]
 
 
 class Request(BaseModel, Generic[TReturn]):
+    """
+    Represents the Mognet request.
+
+    """
     id: UUID = Field(default_factory=uuid4)
     name: str
 
